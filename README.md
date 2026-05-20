@@ -22,6 +22,8 @@ Phase 0/1 foundation is underway:
 - SQLAlchemy database setup
 - Initial provider-neutral tables
 - pytest foundation tests
+- Apify spike helper and sample fixture
+- Apify parser that normalizes recent actor items into provider-neutral post inputs
 
 ## Local setup
 

@@ -43,7 +43,7 @@ The script saves dataset output to:
 tests/fixtures/apify_sample_posts.json
 ```
 
-## Verdict: PENDING
+## Verdict: VALIDATED
 
 ### What worked
 
@@ -51,13 +51,25 @@ tests/fixtures/apify_sample_posts.json
 - `APIFY_TOKEN` is present locally.
 - `APIFY_ACTOR_ID` is set to `Wpp1BZ6yGWjySadk3`.
 - The actor metadata is reachable through the Apify API.
+- Apify Console JSON confirmed the profile/source list key is `urls`.
+- The actor returned records for all three profile URLs.
+- The result includes the core parser fields we need:
+  - `text`
+  - `authorName`
+  - `authorProfileUrl`
+  - `inputUrl`
+  - `url`
+  - `postedAtISO`
+  - `urn`
+  - `shareUrn`
+  - `postedAtTimestamp`
 
-### What is not proven yet
+### Surprises
 
-- The exact actor input field name for profile URLs.
-- Whether this actor returns profile posts from the three URLs.
-- Whether returned items include content, author/profile URL, post URL, timestamp, and a stable unique ID.
+- The run produced far more data than expected even though the script only sent three profile URLs.
+- The helper passed a cost cap, but the actor run still needed to be manually aborted after enough data was collected.
+- The full dataset was too large for a teaching fixture, so it was reduced to a small representative sample before committing.
 
 ### Recommendation for the real build
 
-Before writing `app/sources/apify.py`, confirm the actor input shape in Apify Console and run the helper once. Then build the parser against the saved fixture instead of guessing from docs.
+Build `app/sources/apify.py` against the saved fixture using `urn` as the first-choice stable ID, falling back to `shareUrn`, then `url`, then a deterministic hash from `inputUrl + text + postedAtISO`.

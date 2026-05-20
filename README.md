@@ -24,6 +24,7 @@ Phase 0/1 foundation is underway:
 - pytest foundation tests
 - Apify spike helper and sample fixture
 - Apify parser that normalizes recent actor items into provider-neutral post inputs
+- Ingestion layer that stores parsed posts in SQLite and skips duplicates
 
 ## Local setup
 

@@ -37,7 +37,18 @@ If Apify Console shows the profile-list field has a different name, replace `url
 python scripts/apify_spike.py --run --input-key <field_name_from_apify>
 ```
 
-The script saves dataset output to:
+The script now sends the actor controls we learned from Apify Console:
+
+```json
+{
+  "deepScrape": true,
+  "limitPerSource": 10,
+  "rawData": false,
+  "urls": ["..."]
+}
+```
+
+It saves only records from the last 24 hours to:
 
 ```text
 tests/fixtures/apify_sample_posts.json
@@ -68,6 +79,7 @@ tests/fixtures/apify_sample_posts.json
 
 - The run produced far more data than expected even though the script only sent three profile URLs.
 - The helper passed a cost cap, but the actor run still needed to be manually aborted after enough data was collected.
+- Future runs should keep the actor's `limitPerSource` control enabled and filter saved items to the last 24 hours.
 - The full dataset was too large for a teaching fixture, so it was reduced to a small representative sample before committing.
 
 ### Recommendation for the real build

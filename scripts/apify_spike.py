@@ -20,6 +20,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -73,7 +74,12 @@ def inspect_actor(client: httpx.Client, actor_id: str) -> dict[str, Any]:
 
 
 def build_actor_input(input_key: str) -> dict[str, Any]:
-    return {input_key: SPIKE_PROFILES}
+    return {
+        "deepScrape": True,
+        "limitPerSource": 10,
+        "rawData": False,
+        input_key: SPIKE_PROFILES,
+    }
 
 
 def run_actor(
@@ -101,6 +107,29 @@ def fetch_dataset_items(client: httpx.Client, dataset_id: str) -> list[dict[str,
     )
     response.raise_for_status()
     return response.json()
+
+
+def parse_apify_timestamp(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def filter_recent_items(
+    items: list[dict[str, Any]],
+    *,
+    now: datetime | None = None,
+    lookback: timedelta = timedelta(hours=24),
+) -> list[dict[str, Any]]:
+    cutoff = (now or datetime.now(UTC)) - lookback
+    recent_items = []
+
+    for item in items:
+        posted_at = item.get("postedAtISO")
+        if not posted_at:
+            continue
+        if parse_apify_timestamp(posted_at) >= cutoff:
+            recent_items.append(item)
+
+    return recent_items
 
 
 def save_fixture(items: list[dict[str, Any]], path: Path) -> None:
@@ -170,9 +199,9 @@ def main() -> None:
         if not dataset_id:
             raise SystemExit("Actor run did not return a defaultDatasetId.")
 
-        items = fetch_dataset_items(client, dataset_id)
+        items = filter_recent_items(fetch_dataset_items(client, dataset_id))
         save_fixture(items, args.fixture_path)
-        print(f"\nSaved {len(items)} dataset item(s) to {args.fixture_path}")
+        print(f"\nSaved {len(items)} recent dataset item(s) to {args.fixture_path}")
 
 
 if __name__ == "__main__":

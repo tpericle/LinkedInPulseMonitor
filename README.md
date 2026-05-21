@@ -1,14 +1,14 @@
 # LinkedIn Pulse Monitor
 
-A local-first prototype for tracking LinkedIn profiles, ingesting recent posts through Apify, and generating daily AI summaries and themes.
+A local-first prototype for monitoring a small curated set of important LinkedIn people, finding their new posts, and helping Tony engage quickly without relying on the LinkedIn feed.
 
 ## v0 Goal
 
-- Track a list of LinkedIn profile URLs.
-- Scrape recent posts through Apify.
-- Store new posts in SQLite.
-- Generate daily AI summaries from the last 24 hours.
-- View posts and reports in a lightweight FastAPI dashboard.
+- Track a curated list of important LinkedIn profile URLs.
+- Fetch only new/recent posts from those individuals, starting with manual guarded Apify runs.
+- Store minimal operational state: tracked people, seen post IDs, and a short recent cache.
+- Summarize each new post and include a direct LinkedIn link.
+- Provide a lightweight dashboard/feed so Tony can review and engage quickly.
 
 This repo is built in small, teachable increments using agent-assisted software development.
 
@@ -100,4 +100,11 @@ We will use these profiles for the initial data spike:
 - Prefer small commits.
 - Write tests before implementation when adding behavior.
 - Keep Apify-specific logic isolated under `app/sources/`.
-- Keep AI report generation mock-only until real provider keys are intentionally added.
+- Use manual guarded real-data runs before scheduling Apify checks.
+- Prefer reliable/flexible LinkedIn data sources even if they cost more; validate with measured runs before committing.
+- Notify only when new posts are found; avoid no-post notifications except during testing.
+- Keep AI/report generation mock-only until real provider keys are intentionally added.
+
+## Plan
+
+See `docs/plans/2026-05-21-engagement-feed-plan.md` for the current product plan and next phases.

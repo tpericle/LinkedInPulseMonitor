@@ -11,7 +11,20 @@
   <div class="mt-8 grid gap-4 md:grid-cols-3">
     <div class="rounded-xl bg-slate-800 p-4">
       <h2 class="font-semibold">Profiles</h2>
-      <p class="mt-2 text-sm text-slate-400">Tracked LinkedIn profiles will appear here.</p>
+      {% if tracked_profiles %}
+        <ul class="mt-3 space-y-2 text-sm text-slate-300">
+          {% for profile in tracked_profiles %}
+            <li>
+              <p class="font-medium text-slate-100">{{ profile.full_name or profile.linkedin_url }}</p>
+              {% if profile.company %}
+                <p class="text-slate-400">{{ profile.company }}</p>
+              {% endif %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="mt-2 text-sm text-slate-400">Tracked LinkedIn profiles will appear here.</p>
+      {% endif %}
     </div>
     <div class="rounded-xl bg-slate-800 p-4">
       <h2 class="font-semibold">Recent posts</h2>

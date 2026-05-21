@@ -10,7 +10,7 @@ from sqlalchemy.pool import StaticPool
 import app.models  # noqa: F401
 from app.db import Base, get_db
 from app.main import app
-from app.models import DailyReport, Post
+from app.models import DailyReport, Person, Post
 
 
 @pytest.fixture
@@ -87,3 +87,20 @@ def test_dashboard_renders_recent_posts_and_latest_report(
     assert "Recent Author" in response.text
     assert "Dashboard should show this post." in response.text
     assert "Dashboard should show this report." in response.text
+
+
+def test_dashboard_renders_tracked_profiles(db_session: Session, client_with_db: TestClient):
+    db_session.add(
+        Person(
+            full_name="Dr. Arthur Brooks",
+            company="Harvard",
+            linkedin_url="https://www.linkedin.com/in/arthur-c-brooks/",
+        )
+    )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Dr. Arthur Brooks" in response.text
+    assert "Harvard" in response.text

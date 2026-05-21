@@ -29,6 +29,8 @@ Phase 0/1 foundation is underway:
 - Tracked profile service plus profile creation API
 - Mock daily report generator plus report generation API
 - Dashboard sections for tracked profiles, recent posts, and latest report
+- Dashboard admin form for adding validated LinkedIn profiles
+- Dashboard action for generating today’s mock report
 
 ## Local setup
 

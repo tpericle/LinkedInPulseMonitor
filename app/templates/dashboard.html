@@ -8,12 +8,23 @@
     Track LinkedIn profiles, ingest recent posts through Apify, and generate daily summaries.
   </p>
 
+  {% if success_message %}
+    <div class="mt-6 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+      {{ success_message }}
+    </div>
+  {% endif %}
+
   <div class="mt-8 rounded-xl bg-slate-800 p-5">
     <h2 class="text-xl font-semibold">Add a profile to follow</h2>
     <p class="mt-2 text-sm text-slate-400">
       Guided setup: paste a public LinkedIn profile URL, then add optional context so reports are easier to scan later.
     </p>
     <form class="mt-4 grid gap-4 md:grid-cols-2" method="post" action="/dashboard/profiles">
+      {% if form_error %}
+        <div class="md:col-span-2 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">
+          {{ form_error }}
+        </div>
+      {% endif %}
       <label class="text-sm text-slate-300">
         LinkedIn profile URL
         <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100" name="linkedin_url" type="url" placeholder="https://www.linkedin.com/in/example/" required>

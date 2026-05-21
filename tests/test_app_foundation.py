@@ -3,7 +3,7 @@ from datetime import date, datetime
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -120,3 +120,41 @@ def test_dashboard_renders_tracked_profiles(db_session: Session, client_with_db:
     assert response.status_code == 200
     assert "Dr. Arthur Brooks" in response.text
     assert "Harvard" in response.text
+
+
+def test_dashboard_profile_form_creates_profile_and_confirms(
+    db_session: Session, client_with_db: TestClient
+):
+    response = client_with_db.post(
+        "/dashboard/profiles",
+        data={
+            "linkedin_url": "https://www.linkedin.com/in/dharmesh",
+            "full_name": "Dharmesh Shah",
+            "company": "HubSpot",
+            "tags": "startup, marketing",
+        },
+        follow_redirects=True,
+    )
+
+    stored_person = db_session.scalars(select(Person)).one()
+    assert response.status_code == 200
+    assert stored_person.linkedin_url == "https://www.linkedin.com/in/dharmesh/"
+    assert stored_person.full_name == "Dharmesh Shah"
+    assert stored_person.company == "HubSpot"
+    assert stored_person.tags_json == '["startup", "marketing"]'
+    assert "Now following Dharmesh Shah" in response.text
+    assert "Dharmesh Shah" in response.text
+
+
+def test_dashboard_profile_form_guides_invalid_linkedin_url(
+    db_session: Session, client_with_db: TestClient
+):
+    response = client_with_db.post(
+        "/dashboard/profiles",
+        data={"linkedin_url": "https://example.com/not-linkedin"},
+    )
+
+    assert response.status_code == 400
+    assert db_session.scalars(select(Person)).all() == []
+    assert "Please enter a LinkedIn profile URL" in response.text
+    assert "https://www.linkedin.com/in/" in response.text

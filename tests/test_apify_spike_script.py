@@ -1,6 +1,11 @@
 from datetime import UTC, datetime, timedelta
 
-from scripts.apify_spike import SPIKE_PROFILES, build_actor_input, filter_recent_items
+from scripts.apify_spike import (
+    SPIKE_PROFILES,
+    build_actor_input,
+    filter_recent_items,
+    summarize_run_cost,
+)
 
 
 def test_build_actor_input_uses_actor_controls_for_limited_recent_scrape():
@@ -8,9 +13,33 @@ def test_build_actor_input_uses_actor_controls_for_limited_recent_scrape():
 
     assert actor_input == {
         "deepScrape": True,
-        "limitPerSource": 10,
+        "limitPerSource": 3,
         "rawData": False,
         "urls": SPIKE_PROFILES,
+    }
+
+
+def test_build_actor_input_allows_explicit_limit_per_source():
+    actor_input = build_actor_input("urls", limit_per_source=5)
+
+    assert actor_input["limitPerSource"] == 5
+
+
+def test_summarize_run_cost_exposes_charge_fields_when_available():
+    summary = summarize_run_cost(
+        {
+            "id": "run-123",
+            "status": "SUCCEEDED",
+            "usageTotalUsd": 0.006,
+            "chargedEventCounts": {"actor-start-gb": 1, "post": 4},
+        }
+    )
+
+    assert summary == {
+        "id": "run-123",
+        "status": "SUCCEEDED",
+        "usageTotalUsd": 0.006,
+        "chargedEventCounts": {"actor-start-gb": 1, "post": 4},
     }
 
 

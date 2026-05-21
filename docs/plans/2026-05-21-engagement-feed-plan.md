@@ -74,4 +74,4 @@ The current Apify actor is only the first candidate. Before committing to long-t
 - output quality: direct post URL, post text, author, timestamp, stable ID
 - operational safety: hard run cost caps, retries, error transparency
 
-Reddit and user reports can be useful signal, but final choice should be validated with a small controlled real run and measured output/cost.
+See `docs/research/linkedin-data-sources.md` for the current source comparison and `docs/runbooks/manual-apify-cost-inspection.md` for first-run cost inspection steps.

@@ -73,12 +73,21 @@ def inspect_actor(client: httpx.Client, actor_id: str) -> dict[str, Any]:
     }
 
 
-def build_actor_input(input_key: str) -> dict[str, Any]:
+def build_actor_input(input_key: str, *, limit_per_source: int = 3) -> dict[str, Any]:
     return {
         "deepScrape": True,
-        "limitPerSource": 10,
+        "limitPerSource": limit_per_source,
         "rawData": False,
         input_key: SPIKE_PROFILES,
+    }
+
+
+def summarize_run_cost(run: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "id": run.get("id"),
+        "status": run.get("status"),
+        "usageTotalUsd": run.get("usageTotalUsd"),
+        "chargedEventCounts": run.get("chargedEventCounts"),
     }
 
 
@@ -107,6 +116,12 @@ def fetch_dataset_items(client: httpx.Client, dataset_id: str) -> list[dict[str,
     )
     response.raise_for_status()
     return response.json()
+
+
+def fetch_run_details(client: httpx.Client, run_id: str) -> dict[str, Any]:
+    response = client.get(f"/actor-runs/{run_id}")
+    response.raise_for_status()
+    return response.json()["data"]
 
 
 def parse_apify_timestamp(value: str) -> datetime:
@@ -149,6 +164,12 @@ def main() -> None:
         help="Input field containing the LinkedIn profile URLs. Default: urls.",
     )
     parser.add_argument(
+        "--limit-per-source",
+        type=int,
+        default=3,
+        help="Maximum latest posts to request per profile. Default: 3.",
+    )
+    parser.add_argument(
         "--max-total-charge-usd",
         type=float,
         default=1.0,
@@ -174,12 +195,17 @@ def main() -> None:
         print("\nSpike profiles:")
         print(json.dumps(SPIKE_PROFILES, indent=2))
         print("\nCandidate actor input:")
-        print(json.dumps(build_actor_input(args.input_key), indent=2))
+        print(
+            json.dumps(
+                build_actor_input(args.input_key, limit_per_source=args.limit_per_source),
+                indent=2,
+            )
+        )
 
         if args.inspect:
             return
 
-        actor_input = build_actor_input(args.input_key)
+        actor_input = build_actor_input(args.input_key, limit_per_source=args.limit_per_source)
         run = run_actor(client, actor_id, actor_input, args.max_total_charge_usd)
         dataset_id = run.get("defaultDatasetId")
         print("\nRun result:")
@@ -191,6 +217,8 @@ def main() -> None:
                     "defaultDatasetId": dataset_id,
                     "startedAt": run.get("startedAt"),
                     "finishedAt": run.get("finishedAt"),
+                    "usageTotalUsd": run.get("usageTotalUsd"),
+                    "chargedEventCounts": run.get("chargedEventCounts"),
                 },
                 indent=2,
             )
@@ -201,6 +229,9 @@ def main() -> None:
 
         items = filter_recent_items(fetch_dataset_items(client, dataset_id))
         save_fixture(items, args.fixture_path)
+        run_details = fetch_run_details(client, str(run.get("id")))
+        print("\nCost summary:")
+        print(json.dumps(summarize_run_cost(run_details), indent=2))
         print(f"\nSaved {len(items)} recent dataset item(s) to {args.fixture_path}")
 
 

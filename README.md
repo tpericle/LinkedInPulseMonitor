@@ -24,7 +24,11 @@ Phase 0/1 foundation is underway:
 - pytest foundation tests
 - Apify spike helper and sample fixture
 - Apify parser that normalizes recent actor items into provider-neutral post inputs
+- Pipeline that connects raw Apify items to SQLite ingestion
 - Ingestion layer that stores parsed posts in SQLite and skips duplicates
+- Tracked profile service plus profile creation API
+- Mock daily report generator plus report generation API
+- Dashboard sections for tracked profiles, recent posts, and latest report
 
 ## Local setup
 

@@ -1,4 +1,5 @@
 from typing import Annotated
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -6,8 +7,10 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.apify_http import ApifyHttpClient
 from app.config import get_settings
 from app.db import get_db
+from app.manual_fetch import GuardedFetchError, ManualFetchResult, run_manual_apify_fetch
 from app.models import DailyReport, Person, Post
 from app.people import add_tracked_profile
 from app.reports import generate_daily_report
@@ -80,6 +83,36 @@ def create_dashboard_daily_report(db: Annotated[Session, Depends(get_db)]) -> Re
         ),
         status_code=303,
     )
+
+
+@router.post("/dashboard/fetch/apify")
+def fetch_latest_apify_posts(db: Annotated[Session, Depends(get_db)]) -> RedirectResponse:
+    try:
+        result = _run_dashboard_manual_fetch(db)
+    except GuardedFetchError as error:
+        return RedirectResponse(url=f"/dashboard?success={quote(str(error))}", status_code=303)
+
+    profile_word = "profile" if result.profiles_checked == 1 else "profiles"
+    post_word = "post" if result.inserted_count == 1 else "posts"
+    if result.usage_total_usd is None:
+        cost = "cost unavailable"
+    else:
+        cost = f"${result.usage_total_usd}"
+    message = (
+        f"Fetched latest posts from {result.profiles_checked} active {profile_word}: "
+        f"{result.inserted_count} new {post_word} inserted, "
+        f"{result.skipped_count} skipped, {cost}."
+    )
+    return RedirectResponse(url=f"/dashboard?success={quote(message)}", status_code=303)
+
+
+def _run_dashboard_manual_fetch(db: Session) -> ManualFetchResult:
+    settings = get_settings()
+    if not settings.apify_token or not settings.apify_actor_id:
+        raise GuardedFetchError("Missing APIFY_TOKEN or APIFY_ACTOR_ID in environment/.env.")
+
+    with ApifyHttpClient(token=settings.apify_token) as client:
+        return run_manual_apify_fetch(db, client=client, actor_id=settings.apify_actor_id)
 
 
 def _blank_to_none(value: str) -> str | None:

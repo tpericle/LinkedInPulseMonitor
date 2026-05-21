@@ -10,6 +10,7 @@ from sqlalchemy.pool import StaticPool
 import app.models  # noqa: F401
 from app.db import Base, get_db
 from app.main import app
+from app.manual_fetch import ManualFetchResult
 from app.models import DailyReport, Person, Post
 
 
@@ -158,6 +159,60 @@ def test_dashboard_profile_form_guides_invalid_linkedin_url(
     assert db_session.scalars(select(Person)).all() == []
     assert "Please enter a LinkedIn profile URL" in response.text
     assert "https://www.linkedin.com/in/" in response.text
+
+
+def test_dashboard_renders_manual_fetch_button():
+    client = TestClient(app)
+
+    response = client.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Fetch latest posts now" in response.text
+    assert "action=\"/dashboard/fetch/apify\"" in response.text
+
+
+def test_dashboard_manual_fetch_button_runs_guarded_fetch_and_confirms(
+    monkeypatch: pytest.MonkeyPatch,
+    db_session: Session,
+    client_with_db: TestClient,
+):
+    db_session.add(
+        Person(
+            full_name="Dharmesh Shah",
+            linkedin_url="https://www.linkedin.com/in/dharmesh/",
+            is_active=True,
+        )
+    )
+    db_session.commit()
+    calls = []
+
+    def fake_run_dashboard_manual_fetch(db: Session) -> ManualFetchResult:
+        calls.append(db)
+        return ManualFetchResult(
+            profiles_checked=1,
+            items_returned=3,
+            parsed_count=2,
+            inserted_count=1,
+            skipped_count=2,
+            provider_run_id="run-123",
+            provider_dataset_id="dataset-123",
+            status="SUCCEEDED",
+            usage_total_usd=0.011,
+            charged_event_counts={"post": 3},
+        )
+
+    monkeypatch.setattr(
+        "app.routers.dashboard._run_dashboard_manual_fetch",
+        fake_run_dashboard_manual_fetch,
+    )
+
+    response = client_with_db.post("/dashboard/fetch/apify", follow_redirects=True)
+
+    assert response.status_code == 200
+    assert calls == [db_session]
+    assert "Fetched latest posts from 1 active profile" in response.text
+    assert "1 new post inserted" in response.text
+    assert "$0.011" in response.text
 
 
 def test_dashboard_daily_report_button_generates_report(

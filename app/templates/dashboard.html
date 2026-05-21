@@ -47,6 +47,16 @@
     </form>
   </div>
 
+  <div class="mt-8 rounded-xl bg-slate-800 p-5">
+    <h2 class="text-xl font-semibold">Manual fetch</h2>
+    <p class="mt-2 text-sm text-slate-400">
+      Guarded run: active profiles only, three profiles max, three latest posts per profile, and a $1.00 Apify cost cap.
+    </p>
+    <form class="mt-4" method="post" action="/dashboard/fetch/apify">
+      <button class="rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-slate-950 hover:bg-emerald-400" type="submit">Fetch latest posts now</button>
+    </form>
+  </div>
+
   <div class="mt-8 grid gap-4 md:grid-cols-3">
     <div class="rounded-xl bg-slate-800 p-4">
       <h2 class="font-semibold">Profiles</h2>

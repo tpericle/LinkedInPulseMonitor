@@ -30,6 +30,8 @@ Phase 0/1 foundation is underway:
 - Mock daily report generator plus report generation API
 - Dashboard sections for tracked profiles, recent posts, and latest report
 - Dashboard admin form for adding validated LinkedIn profiles
+- Guarded manual Apify fetch service and CLI
+- Dashboard action for fetching latest posts now with cost/count confirmation
 - Dashboard action for generating today’s mock report
 
 ## Local setup
@@ -71,6 +73,23 @@ Health check:
 ```text
 http://localhost:8000/health
 ```
+
+## Run a guarded manual Apify fetch
+
+From the CLI:
+
+```bash
+source .venv/bin/activate
+python scripts/manual_apify_fetch.py --limit-per-source 3 --max-total-charge-usd 1.00
+```
+
+Or from the dashboard, use **Fetch latest posts now**. Both paths use the same guardrails:
+
+- active tracked profiles only
+- three active profiles max by default
+- three latest posts per profile by default
+- `$1.00` Apify cost cap by default
+- no scheduling
 
 ## Run tests
 

@@ -46,3 +46,24 @@ def test_ingest_apify_items_parses_recent_items_and_stores_them(db_session: Sess
     assert result.skipped_count == 1
     assert [post.source_post_id for post in stored_posts] == ["urn:li:ugcPost:recent"]
     assert stored_posts[0].content == "Recent post worth digesting."
+
+
+def test_ingest_apify_items_reports_duplicate_posts_as_skipped(db_session: Session):
+    now = datetime(2026, 5, 20, 20, 0, tzinfo=UTC)
+    item = {
+        "shareUrn": "urn:li:ugcPost:duplicate",
+        "text": "Same post appears twice.",
+        "postedAtISO": "2026-05-20T19:00:00.000Z",
+    }
+
+    first_result = ingest_apify_items(db_session, [item], now=now)
+    second_result = ingest_apify_items(db_session, [item], now=now)
+
+    stored_posts = db_session.scalars(select(Post)).all()
+    assert first_result.parsed_count == 1
+    assert first_result.inserted_count == 1
+    assert first_result.skipped_count == 0
+    assert second_result.parsed_count == 1
+    assert second_result.inserted_count == 0
+    assert second_result.skipped_count == 1
+    assert len(stored_posts) == 1

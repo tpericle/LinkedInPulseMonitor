@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 
 import pytest
 from fastapi.testclient import TestClient
@@ -158,3 +158,28 @@ def test_dashboard_profile_form_guides_invalid_linkedin_url(
     assert db_session.scalars(select(Person)).all() == []
     assert "Please enter a LinkedIn profile URL" in response.text
     assert "https://www.linkedin.com/in/" in response.text
+
+
+def test_dashboard_daily_report_button_generates_report(
+    db_session: Session, client_with_db: TestClient
+):
+    db_session.add(
+        Post(
+            source="apify",
+            source_post_id="post-for-report",
+            author_name="Report Author",
+            content="Dashboard action should include this post in the report.",
+            post_type="post",
+            authored_at=datetime.now(UTC).replace(tzinfo=None),
+            raw_json="{}",
+        )
+    )
+    db_session.commit()
+
+    response = client_with_db.post("/dashboard/reports/daily", follow_redirects=True)
+
+    stored_report = db_session.scalars(select(DailyReport)).one()
+    assert response.status_code == 200
+    assert stored_report.post_count == 1
+    assert "Generated today’s mock report from 1 recent post" in response.text
+    assert "Mock summary for 1 recent LinkedIn post." in response.text

@@ -10,6 +10,7 @@ from app.config import get_settings
 from app.db import get_db
 from app.models import DailyReport, Person, Post
 from app.people import add_tracked_profile
+from app.reports import generate_daily_report
 
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
@@ -63,6 +64,20 @@ async def create_dashboard_profile(
     display_name = person.full_name or person.linkedin_url
     return RedirectResponse(
         url=f"/dashboard?success=Now following {display_name}",
+        status_code=303,
+    )
+
+
+@router.post("/dashboard/reports/daily")
+def create_dashboard_daily_report(db: Annotated[Session, Depends(get_db)]) -> RedirectResponse:
+    result = generate_daily_report(db)
+    report = db.get_one(DailyReport, result.report_id)
+    post_word = "post" if report.post_count == 1 else "posts"
+    return RedirectResponse(
+        url=(
+            "/dashboard?success="
+            f"Generated today’s mock report from {report.post_count} recent {post_word}"
+        ),
         status_code=303,
     )
 

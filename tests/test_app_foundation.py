@@ -56,6 +56,22 @@ def test_dashboard_renders_project_name():
     assert "LinkedIn Pulse Monitor" in response.text
 
 
+def test_dashboard_renders_guided_profile_form():
+    client = TestClient(app)
+
+    response = client.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Add a profile to follow" in response.text
+    assert "LinkedIn profile URL" in response.text
+    assert "https://www.linkedin.com/in/" in response.text
+    assert "name=\"linkedin_url\"" in response.text
+    assert "name=\"full_name\"" in response.text
+    assert "name=\"company\"" in response.text
+    assert "name=\"tags\"" in response.text
+    assert "Start following" in response.text
+
+
 def test_dashboard_renders_recent_posts_and_latest_report(
     db_session: Session, client_with_db: TestClient
 ):

@@ -8,6 +8,34 @@
     Track LinkedIn profiles, ingest recent posts through Apify, and generate daily summaries.
   </p>
 
+  <div class="mt-8 rounded-xl bg-slate-800 p-5">
+    <h2 class="text-xl font-semibold">Add a profile to follow</h2>
+    <p class="mt-2 text-sm text-slate-400">
+      Guided setup: paste a public LinkedIn profile URL, then add optional context so reports are easier to scan later.
+    </p>
+    <form class="mt-4 grid gap-4 md:grid-cols-2" method="post" action="/dashboard/profiles">
+      <label class="text-sm text-slate-300">
+        LinkedIn profile URL
+        <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100" name="linkedin_url" type="url" placeholder="https://www.linkedin.com/in/example/" required>
+      </label>
+      <label class="text-sm text-slate-300">
+        Full name
+        <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100" name="full_name" type="text" placeholder="Optional display name">
+      </label>
+      <label class="text-sm text-slate-300">
+        Company
+        <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100" name="company" type="text" placeholder="Optional company or role context">
+      </label>
+      <label class="text-sm text-slate-300">
+        Tags
+        <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-slate-100" name="tags" type="text" placeholder="Comma-separated, e.g. leadership, AI">
+      </label>
+      <div class="md:col-span-2">
+        <button class="rounded-lg bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400" type="submit">Start following</button>
+      </div>
+    </form>
+  </div>
+
   <div class="mt-8 grid gap-4 md:grid-cols-3">
     <div class="rounded-xl bg-slate-800 p-4">
       <h2 class="font-semibold">Profiles</h2>

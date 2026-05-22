@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
@@ -11,7 +11,7 @@ import app.models  # noqa: F401
 from app.db import Base, get_db
 from app.main import app
 from app.manual_fetch import ManualFetchResult
-from app.models import DailyReport, Person, Post
+from app.models import DailyReport, Person, Post, ScrapeRun
 
 
 @pytest.fixture
@@ -106,12 +106,46 @@ def test_dashboard_renders_recent_posts_and_latest_report(
     assert "Dashboard should show this report." in response.text
 
 
-def test_dashboard_renders_tracked_profiles(db_session: Session, client_with_db: TestClient):
+def test_dashboard_renders_active_profiles_and_hides_inactive_profiles(
+    db_session: Session, client_with_db: TestClient
+):
+    db_session.add_all(
+        [
+            Person(
+                full_name="Dr. Arthur Brooks",
+                company="Harvard",
+                linkedin_url="https://www.linkedin.com/in/arthur-c-brooks/",
+                is_active=True,
+            ),
+            Person(
+                full_name="Archived Person",
+                company="Old Company",
+                linkedin_url="https://www.linkedin.com/in/archived-person/",
+                is_active=False,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Active profiles" in response.text
+    assert "1 active profile configured" in response.text
+    assert "Dr. Arthur Brooks" in response.text
+    assert "Harvard" in response.text
+    assert "https://www.linkedin.com/in/arthur-c-brooks/" in response.text
+    assert "Archived Person" not in response.text
+
+
+def test_dashboard_explains_when_no_active_profiles(
+    db_session: Session, client_with_db: TestClient
+):
     db_session.add(
         Person(
-            full_name="Dr. Arthur Brooks",
-            company="Harvard",
-            linkedin_url="https://www.linkedin.com/in/arthur-c-brooks/",
+            full_name="Inactive Only",
+            linkedin_url="https://www.linkedin.com/in/inactive-only/",
+            is_active=False,
         )
     )
     db_session.commit()
@@ -119,8 +153,8 @@ def test_dashboard_renders_tracked_profiles(db_session: Session, client_with_db:
     response = client_with_db.get("/dashboard")
 
     assert response.status_code == 200
-    assert "Dr. Arthur Brooks" in response.text
-    assert "Harvard" in response.text
+    assert "No active profiles configured" in response.text
+    assert "Manual fetch needs at least one active profile before it can run." in response.text
 
 
 def test_dashboard_profile_form_creates_profile_and_confirms(
@@ -171,7 +205,67 @@ def test_dashboard_renders_manual_fetch_button():
     assert "action=\"/dashboard/fetch/apify\"" in response.text
 
 
-def test_dashboard_manual_fetch_button_runs_guarded_fetch_and_confirms(
+def test_dashboard_recent_posts_focuses_on_last_seven_days(
+    db_session: Session, client_with_db: TestClient
+):
+    now = datetime.now(UTC).replace(tzinfo=None)
+    db_session.add_all(
+        [
+            Post(
+                source="apify",
+                source_post_id="recent-seven-day-post",
+                author_name="Seven Day Author",
+                content="This post is inside the seven day dashboard window.",
+                post_type="post",
+                authored_at=now - timedelta(days=6),
+                raw_json="{}",
+            ),
+            Post(
+                source="apify",
+                source_post_id="older-than-seven-days",
+                author_name="Old Author",
+                content="This post should not be shown on the dashboard.",
+                post_type="post",
+                authored_at=now - timedelta(days=8),
+                raw_json="{}",
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Recent posts from the last 7 days" in response.text
+    assert "Seven Day Author" in response.text
+    assert "This post is inside the seven day dashboard window." in response.text
+    assert "Old Author" not in response.text
+    assert "This post should not be shown on the dashboard." not in response.text
+
+
+def test_dashboard_empty_recent_posts_names_seven_day_window_and_last_fetch(
+    db_session: Session, client_with_db: TestClient
+):
+    last_fetch = datetime(2026, 5, 21, 15, 30)
+    db_session.add(
+        ScrapeRun(
+            provider="apify",
+            status="SUCCEEDED",
+            started_at=last_fetch,
+            finished_at=last_fetch,
+            item_count=0,
+        )
+    )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Nothing posted in the last 7 days." in response.text
+    assert "Last fetch: 2026-05-21 15:30" in response.text
+
+
+def test_dashboard_manual_fetch_button_runs_guarded_fetch_and_shows_step_log(
     monkeypatch: pytest.MonkeyPatch,
     db_session: Session,
     client_with_db: TestClient,
@@ -210,9 +304,14 @@ def test_dashboard_manual_fetch_button_runs_guarded_fetch_and_confirms(
 
     assert response.status_code == 200
     assert calls == [db_session]
-    assert "Fetched latest posts from 1 active profile" in response.text
-    assert "1 new post inserted" in response.text
-    assert "$0.011" in response.text
+    assert "Fetch recap" in response.text
+    assert "Found 1 active profile." in response.text
+    assert "Asked Apify for up to 3 latest posts per profile." in response.text
+    assert "Apify returned 3 items." in response.text
+    assert "Parsed 2 posts from those items." in response.text
+    assert "Saved 1 new post and skipped 2 existing or out-of-window posts." in response.text
+    assert "Provider status: SUCCEEDED." in response.text
+    assert "Estimated Apify cost: $0.011." in response.text
 
 
 def test_dashboard_daily_report_button_generates_report(

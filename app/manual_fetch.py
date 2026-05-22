@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
 
 from sqlalchemy import select
@@ -56,6 +56,7 @@ def run_manual_apify_fetch(
     max_profiles: int = DEFAULT_MAX_PROFILES,
     limit_per_source: int = DEFAULT_LIMIT_PER_SOURCE,
     max_total_charge_usd: float = DEFAULT_MAX_TOTAL_CHARGE_USD,
+    lookback: timedelta | None = None,
 ) -> ManualFetchResult:
     active_profiles = db.scalars(
         select(Person).where(Person.is_active.is_(True)).order_by(Person.added_at.asc())
@@ -81,7 +82,12 @@ def run_manual_apify_fetch(
         raise GuardedFetchError("Apify run did not return a defaultDatasetId.")
 
     items = client.fetch_dataset_items(str(dataset_id))
-    pipeline_result = ingest_apify_items(db, items, now=now or datetime.now(UTC))
+    pipeline_result = ingest_apify_items(
+        db,
+        items,
+        now=now or datetime.now(UTC),
+        **({"lookback": lookback} if lookback is not None else {}),
+    )
 
     run_id = _optional_str(run.get("id"))
     run_details = client.fetch_run_details(run_id) if run_id else {}

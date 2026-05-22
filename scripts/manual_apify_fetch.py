@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+from datetime import timedelta
 
 from app.apify_http import ApifyHttpClient
 from app.config import get_settings
@@ -37,6 +38,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--max-profiles", type=int, default=DEFAULT_MAX_PROFILES)
     parser.add_argument("--limit-per-source", type=int, default=DEFAULT_LIMIT_PER_SOURCE)
     parser.add_argument("--max-total-charge-usd", type=float, default=DEFAULT_MAX_TOTAL_CHARGE_USD)
+    parser.add_argument(
+        "--lookback-hours",
+        type=int,
+        default=24,
+        help="Only ingest posts authored within this many hours. Default: 24.",
+    )
     return parser
 
 
@@ -55,6 +62,7 @@ def main(argv: list[str] | None = None) -> None:
             max_profiles=args.max_profiles,
             limit_per_source=args.limit_per_source,
             max_total_charge_usd=args.max_total_charge_usd,
+            lookback=timedelta(hours=args.lookback_hours),
         )
     print(format_fetch_result(result))
 

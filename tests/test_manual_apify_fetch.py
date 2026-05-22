@@ -1,5 +1,5 @@
 from collections.abc import Generator
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from sqlalchemy import create_engine, select
@@ -120,6 +120,41 @@ def test_manual_fetch_uses_active_profiles_and_ingests_recent_posts(db_session: 
     assert result.skipped_count == 0
     assert result.usage_total_usd == 0.011
     assert result.charged_event_counts == {"actor-start-gb": 1, "post": 1}
+
+
+def test_manual_fetch_accepts_custom_lookback_for_one_off_backfill(db_session: Session):
+    now = datetime(2026, 5, 21, 12, 0, tzinfo=UTC)
+    add_tracked_profile(
+        db_session,
+        linkedin_url="https://www.linkedin.com/in/dharmesh/",
+        full_name="Dharmesh Shah",
+    )
+    client = FakeApifyClient(
+        items=[
+            {
+                "id": "post-72h",
+                "postedAtISO": "2026-05-19T12:30:00.000Z",
+                "text": "A post from within the 72 hour backfill window.",
+                "url": "https://www.linkedin.com/feed/update/urn:li:activity:72/",
+                "authorName": "Dharmesh Shah",
+                "authorProfileUrl": "https://www.linkedin.com/in/dharmesh/",
+                "type": "post",
+            }
+        ]
+    )
+
+    result = run_manual_apify_fetch(
+        db_session,
+        client=client,
+        actor_id="supreme_coder/linkedin-post",
+        now=now,
+        lookback=timedelta(hours=72),
+    )
+
+    stored_post = db_session.scalars(select(Post)).one()
+    assert stored_post.source_post_id == "post-72h"
+    assert result.parsed_count == 1
+    assert result.inserted_count == 1
 
 
 def test_manual_fetch_refuses_more_than_max_active_profiles(db_session: Session):

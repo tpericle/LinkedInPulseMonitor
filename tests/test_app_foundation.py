@@ -12,6 +12,7 @@ from app.db import Base, get_db
 from app.main import app
 from app.manual_fetch import ManualFetchResult
 from app.models import DailyReport, Person, Post, ScrapeRun
+from app.sample_profiles import SAMPLE_PROFILES, seed_sample_profiles
 
 
 @pytest.fixture
@@ -57,20 +58,26 @@ def test_dashboard_renders_project_name():
     assert "LinkedIn Pulse Monitor" in response.text
 
 
-def test_dashboard_renders_guided_profile_form():
+def test_dashboard_renders_profile_administration_stub():
     client = TestClient(app)
 
     response = client.get("/dashboard")
 
     assert response.status_code == 200
-    assert "Add a profile to follow" in response.text
-    assert "LinkedIn profile URL" in response.text
-    assert "https://www.linkedin.com/in/" in response.text
-    assert "name=\"linkedin_url\"" in response.text
-    assert "name=\"full_name\"" in response.text
-    assert "name=\"company\"" in response.text
-    assert "name=\"tags\"" in response.text
-    assert "Start following" in response.text
+    assert "Profile administration" in response.text
+    assert "Coming next: add new profiles, archive profiles" in response.text
+
+
+def test_seed_sample_profiles_creates_three_active_starter_profiles(db_session: Session):
+    seeded_ids = seed_sample_profiles(db_session)
+
+    people = db_session.scalars(select(Person).order_by(Person.full_name)).all()
+    assert len(seeded_ids) == 3
+    assert {person.full_name for person in people} == {
+        profile.full_name for profile in SAMPLE_PROFILES
+    }
+    assert all(person.is_active for person in people)
+    assert all(person.company for person in people)
 
 
 def test_dashboard_renders_recent_posts_and_latest_report(
@@ -81,7 +88,9 @@ def test_dashboard_renders_recent_posts_and_latest_report(
             source="apify",
             source_post_id="post-1",
             author_name="Recent Author",
-            content="Dashboard should show this post.",
+            content=(
+                "Line one hook.\nLine two hook.\nLine three hook.\nLine four should not appear."
+            ),
             post_type="post",
             authored_at=datetime(2026, 5, 20, 18, 0),
             raw_json="{}",
@@ -102,7 +111,10 @@ def test_dashboard_renders_recent_posts_and_latest_report(
 
     assert response.status_code == 200
     assert "Recent Author" in response.text
-    assert "Dashboard should show this post." in response.text
+    assert "Line one hook." in response.text
+    assert "Line two hook." in response.text
+    assert "Line three hook." in response.text
+    assert "Line four should not appear." not in response.text
     assert "Dashboard should show this report." in response.text
 
 
@@ -130,7 +142,8 @@ def test_dashboard_renders_active_profiles_and_hides_inactive_profiles(
     response = client_with_db.get("/dashboard")
 
     assert response.status_code == 200
-    assert "Active profiles" in response.text
+    assert "People we follow" in response.text
+    assert "These are the people that we’re following" in response.text
     assert "1 active profile configured" in response.text
     assert "Dr. Arthur Brooks" in response.text
     assert "Harvard" in response.text
@@ -205,6 +218,18 @@ def test_dashboard_renders_manual_fetch_button():
     assert "action=\"/dashboard/fetch/apify\"" in response.text
 
 
+def test_dashboard_orders_recent_posts_then_followed_people_then_administration():
+    client = TestClient(app)
+
+    response = client.get("/dashboard")
+
+    assert response.status_code == 200
+    recent_index = response.text.index("Priority feed")
+    people_index = response.text.index("People we follow")
+    admin_index = response.text.index("Profile administration")
+    assert recent_index < people_index < admin_index
+
+
 def test_dashboard_recent_posts_focuses_on_last_seven_days(
     db_session: Session, client_with_db: TestClient
 ):
@@ -218,6 +243,7 @@ def test_dashboard_recent_posts_focuses_on_last_seven_days(
                 content="This post is inside the seven day dashboard window.",
                 post_type="post",
                 authored_at=now - timedelta(days=6),
+                linkedin_url="https://www.linkedin.com/feed/update/urn:li:share:recent-seven-day-post/",
                 raw_json="{}",
             ),
             Post(
@@ -239,6 +265,9 @@ def test_dashboard_recent_posts_focuses_on_last_seven_days(
     assert "Recent posts from the last 7 days" in response.text
     assert "Seven Day Author" in response.text
     assert "This post is inside the seven day dashboard window." in response.text
+    post_url = "https://www.linkedin.com/feed/update/urn:li:share:recent-seven-day-post/"
+    assert post_url in response.text
+    assert "Open post →" in response.text
     assert "Old Author" not in response.text
     assert "This post should not be shown on the dashboard." not in response.text
 

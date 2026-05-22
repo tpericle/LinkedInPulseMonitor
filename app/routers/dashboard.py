@@ -146,6 +146,7 @@ def _dashboard_context(
         "active_profiles": active_profiles,
         "active_profile_count": len(active_profiles),
         "recent_posts": recent_posts,
+        "recent_post_cards": [_post_card(post) for post in recent_posts],
         "recent_post_days": 7,
         "latest_fetch_at": latest_fetch_at,
         "latest_fetch_display": _format_datetime(latest_fetch_at),
@@ -160,6 +161,26 @@ def _format_datetime(value: datetime | None) -> str | None:
     if value is None:
         return None
     return value.strftime("%Y-%m-%d %H:%M")
+
+
+def _post_card(post: Post) -> dict[str, object]:
+    return {
+        "author_name": post.author_name or "Unknown author",
+        "linkedin_url": post.linkedin_url,
+        "authored_at": post.authored_at,
+        "authored_at_display": _format_datetime(post.authored_at),
+        "summary": _post_hook_summary(post.content),
+    }
+
+
+def _post_hook_summary(content: str) -> str:
+    lines = [line.strip() for line in content.splitlines() if line.strip()]
+    if lines:
+        return "\n".join(lines[:3])
+    words = content.strip().split()
+    if len(words) <= 45:
+        return content.strip()
+    return " ".join(words[:45]) + "…"
 
 
 def _build_fetch_log(result: ManualFetchResult) -> list[str]:

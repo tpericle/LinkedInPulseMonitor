@@ -56,7 +56,7 @@ The dashboard is organized as:
 1. **Priority feed**
    - Recent saved posts from the last 7 days.
    - Manual fetch button.
-   - Post cards with author, date, preview/hook, and direct LinkedIn link.
+   - Post cards with author, date, review/age badges, preview/hook, and direct LinkedIn link.
 
 2. **People we follow**
    - Active tracked profiles.
@@ -190,7 +190,7 @@ With `uv`:
 uv run ruff check .
 ```
 
-Latest known verification from the prior working session:
+Latest known verification from this session:
 
 ```text
 uv run pytest -q      -> 45 passed
@@ -236,19 +236,23 @@ Cmd + Shift + R
 
 Review:
 
-1. Do the recent posts feel prominent enough?
-2. Are the post hooks/previews useful?
-3. Are the profile blurbs good enough for now?
-4. Does the page flow make sense: recent posts -> people followed -> admin?
+1. Does `Review today` make the newest 24-hour posts stand out enough?
+2. Does `Review window` feel like the right label for older saved posts that are still useful in the 7-day dashboard window?
+3. Are relative age labels like `~3h ago` and `~2d ago` easier to scan than timestamp alone?
+4. Does the page flow still make sense: recent posts -> people followed -> admin?
 
 Recommended next development focus:
 
-- Tighten visual layout.
-- Improve post-card readability.
-- Decide later whether previews should become true AI-generated summaries.
+- If the badge language feels right, add simple reviewed/engaged state next.
+- If the badge language is noisy, tune labels before adding new behavior.
 - Do not add archive/delete/profile management until the main feed experience feels right.
 
 ## Progress log
+
+### 2026-05-23 — Priority-feed review badges added
+
+- Added `Review today` / `Review window` badges and relative age labels to priority-feed post cards.
+- Verified the dashboard remains easy to scan in the browser.
 
 ### 2026-05-22 — Project context documentation added
 

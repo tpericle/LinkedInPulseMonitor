@@ -156,7 +156,7 @@ pytest -q
 ruff check .
 ```
 
-## Current known state as of 2026-05-22
+## Current known state as of 2026-05-23
 
 The project has moved beyond the initial foundation. The dashboard and Apify flow have working pieces.
 
@@ -182,6 +182,7 @@ Implemented so far:
   2. People we follow.
   3. Profile administration placeholder.
   4. Daily report.
+- Priority-feed post cards now show lightweight review/age badges, such as `Review today`, `Review window`, and relative age labels like `~3h ago`.
 
 Latest known relevant commit from prior session:
 
@@ -189,7 +190,7 @@ Latest known relevant commit from prior session:
 d9edb02 Reorganize dashboard around recent posts
 ```
 
-Latest known verification from prior session:
+Latest known verification from this session:
 
 ```text
 uv run pytest -q      # 45 passed
@@ -206,17 +207,17 @@ scrape_runs: 1
 
 ## Current review focus
 
-Tony should review the dashboard reading experience:
+Tony should review the priority feed after the review/age badge update:
 
-- Are recent posts prominent enough?
-- Are post hooks/previews useful?
-- Are the profile blurbs good enough for now?
-- Does the page flow make sense: recent posts -> people followed -> admin?
+- Does `Review today` make the newest 24-hour posts stand out enough?
+- Does `Review window` feel like the right label for older saved posts that are still useful for the 7-day dashboard review?
+- Are relative age labels like `~3h ago` and `~2d ago` easier to scan than timestamp alone?
+- Does the page flow still make sense: recent posts -> people followed -> admin?
 
 Recommended next development focus:
 
-1. Tighten visual layout and post-card readability.
-2. Decide whether first 2–3 lines are enough for previews or whether true AI summaries are needed later.
+1. If the badge language feels right, add simple reviewed/engaged state next.
+2. If the badge language is noisy, tune labels before adding new behavior.
 3. Do not add archive/delete/profile management until the main feed experience feels right.
 
 ## Documentation maintenance rule
@@ -230,6 +231,12 @@ As the project evolves, append updates rather than relying only on chat history.
   - `README.md` is the human-facing setup and usage file.
 
 ## Progress log
+
+### 2026-05-23 — Priority-feed review badges added
+
+- Added relative age labels and lightweight review badges to priority-feed post cards.
+- Kept the dashboard local-first and mock-AI by default.
+- Verified with `uv run pytest -q`, `uv run ruff check .`, and a browser visual inspection.
 
 ### 2026-05-22 — Context documentation added
 

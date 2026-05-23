@@ -92,7 +92,7 @@ def test_dashboard_renders_recent_posts_and_latest_report(
                 "Line one hook.\nLine two hook.\nLine three hook.\nLine four should not appear."
             ),
             post_type="post",
-            authored_at=datetime(2026, 5, 20, 18, 0),
+            authored_at=datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=3),
             raw_json="{}",
         )
     )
@@ -111,6 +111,8 @@ def test_dashboard_renders_recent_posts_and_latest_report(
 
     assert response.status_code == 200
     assert "Recent Author" in response.text
+    assert "Review today" in response.text
+    assert "~3h ago" in response.text
     assert "Line one hook." in response.text
     assert "Line two hook." in response.text
     assert "Line three hook." in response.text
@@ -264,6 +266,8 @@ def test_dashboard_recent_posts_focuses_on_last_seven_days(
     assert response.status_code == 200
     assert "Recent posts from the last 7 days" in response.text
     assert "Seven Day Author" in response.text
+    assert "Review window" in response.text
+    assert "~6d ago" in response.text
     assert "This post is inside the seven day dashboard window." in response.text
     post_url = "https://www.linkedin.com/feed/update/urn:li:share:recent-seven-day-post/"
     assert post_url in response.text

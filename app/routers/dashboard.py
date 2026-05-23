@@ -169,8 +169,34 @@ def _post_card(post: Post) -> dict[str, object]:
         "linkedin_url": post.linkedin_url,
         "authored_at": post.authored_at,
         "authored_at_display": _format_datetime(post.authored_at),
+        "age_display": _format_age(post.authored_at),
+        "review_label": _review_label(post.authored_at),
         "summary": _post_hook_summary(post.content),
     }
+
+
+def _format_age(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    now = datetime.now(UTC).replace(tzinfo=None)
+    elapsed_seconds = max(0, int((now - value).total_seconds()))
+    elapsed_minutes = elapsed_seconds // 60
+    if elapsed_minutes < 60:
+        return f"~{max(1, elapsed_minutes)}m ago"
+    elapsed_hours = elapsed_minutes // 60
+    if elapsed_hours < 48:
+        return f"~{elapsed_hours}h ago"
+    elapsed_days = elapsed_hours // 24
+    return f"~{elapsed_days}d ago"
+
+
+def _review_label(value: datetime | None) -> str:
+    if value is None:
+        return "Review window"
+    now = datetime.now(UTC).replace(tzinfo=None)
+    if now - value <= timedelta(hours=24):
+        return "Review today"
+    return "Review window"
 
 
 def _post_hook_summary(content: str) -> str:

@@ -48,6 +48,8 @@ The prototype currently includes:
 - Seed script for the three starter profiles.
 - Real Apify fetch path validated.
 - Dashboard reorganized around the priority feed and tracked people.
+- Dashboard profile administration for adding, archiving, and reactivating tracked profiles.
+- Planning docs for regular runs, administration, and markdown-based commentary guidance.
 
 ## Current dashboard flow
 
@@ -63,8 +65,10 @@ The dashboard is organized as:
    - Currently seeded starter profiles: Arthur Brooks, Daniel Pink, Dharmesh Shah.
 
 3. **Profile administration**
-   - Placeholder/stub for now.
-   - Add/archive/reactivate workflows are intentionally deferred.
+   - Add a new tracked LinkedIn profile.
+   - Archive profiles you no longer want to monitor.
+   - Reactivate archived profiles later.
+   - Archived profiles stay in the local database but are excluded from fetches.
 
 4. **Daily report**
    - Mock/no-op by default until a real AI provider is intentionally configured.
@@ -213,12 +217,16 @@ uv run ruff check .   -> All checks passed
 - `README.md` — human-facing setup, usage, status, and review instructions.
 - `AGENTS.md` — agent-facing project context, conventions, architecture notes, and progress log.
 - `docs/plans/` — implementation/product plans.
+- `docs/profile/tony-commentary-style.md` — editable markdown source for Tony's profile, point of view, and future comment starter guidance.
 - `spikes/` — exploratory integration notes.
 - `tests/fixtures/` — sample Apify/mock data and fixture notes.
 
 ## Plan
 
-See `docs/plans/2026-05-21-engagement-feed-plan.md` for the current product plan and next phases.
+See:
+
+- `docs/plans/2026-05-21-engagement-feed-plan.md` for the original engagement feed plan.
+- `docs/plans/2026-05-23-regular-runs-admin-commentary.md` for the next plan covering regular runs, administration/archive, and markdown-based commentary guidance.
 
 ## Current review focus
 
@@ -236,18 +244,24 @@ Cmd + Shift + R
 
 Review:
 
-1. Does `Review today` make the newest 24-hour posts stand out enough?
-2. Does `Review window` feel like the right label for older saved posts that are still useful in the 7-day dashboard window?
-3. Are relative age labels like `~3h ago` and `~2d ago` easier to scan than timestamp alone?
-4. Does the page flow still make sense: recent posts -> people followed -> admin?
+1. Can you add a profile with URL, name, company/note, and optional tags?
+2. Can you archive an active profile and see it move into `Archived profiles`?
+3. Can you reactivate an archived profile and see it return to the active controls?
+4. Does the administration section still feel simple enough below the clean priority feed?
 
 Recommended next development focus:
 
-- If the badge language feels right, add simple reviewed/engaged state next.
-- If the badge language is noisy, tune labels before adding new behavior.
-- Do not add archive/delete/profile management until the main feed experience feels right.
+- Add a one-command daily cycle script for fetch + report.
+- Read `docs/profile/tony-commentary-style.md` from code and use it for mock comment starter ideas.
+- Schedule the daily cycle only after the one-command version feels reliable and cost-safe.
 
 ## Progress log
+
+### 2026-05-23 — Administration slice and next-step plan added
+
+- Added dashboard administration for profile add/archive/reactivate.
+- Added `docs/profile/tony-commentary-style.md` as the editable markdown starting point for Tony's future comment guidance.
+- Added `docs/plans/2026-05-23-regular-runs-admin-commentary.md` covering regular runs, administration, and commentary suggestions.
 
 ### 2026-05-23 — Priority-feed review badges added
 

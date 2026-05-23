@@ -67,6 +67,42 @@ async def create_dashboard_profile(
     )
 
 
+@router.post("/dashboard/profiles/{person_id}/archive")
+def archive_dashboard_profile(
+    person_id: int,
+    db: Annotated[Session, Depends(get_db)],
+) -> RedirectResponse:
+    person = db.get(Person, person_id)
+    if person is None:
+        return RedirectResponse(url="/dashboard?success=Profile not found", status_code=303)
+
+    person.is_active = False
+    db.commit()
+    display_name = person.full_name or person.linkedin_url
+    return RedirectResponse(
+        url=f"/dashboard?success={quote(f'Archived {display_name}')}",
+        status_code=303,
+    )
+
+
+@router.post("/dashboard/profiles/{person_id}/reactivate")
+def reactivate_dashboard_profile(
+    person_id: int,
+    db: Annotated[Session, Depends(get_db)],
+) -> RedirectResponse:
+    person = db.get(Person, person_id)
+    if person is None:
+        return RedirectResponse(url="/dashboard?success=Profile not found", status_code=303)
+
+    person.is_active = True
+    db.commit()
+    display_name = person.full_name or person.linkedin_url
+    return RedirectResponse(
+        url=f"/dashboard?success={quote(f'Reactivated {display_name}')}",
+        status_code=303,
+    )
+
+
 @router.post("/dashboard/reports/daily")
 def create_dashboard_daily_report(db: Annotated[Session, Depends(get_db)]) -> RedirectResponse:
     result = generate_daily_report(db)
@@ -124,6 +160,9 @@ def _dashboard_context(
     active_profiles = db.scalars(
         select(Person).where(Person.is_active.is_(True)).order_by(Person.added_at.desc()).limit(10)
     ).all()
+    archived_profiles = db.scalars(
+        select(Person).where(Person.is_active.is_(False)).order_by(Person.added_at.desc()).limit(10)
+    ).all()
     recent_posts = db.scalars(
         select(Post)
         .where(Post.authored_at.is_not(None), Post.authored_at >= recent_cutoff)
@@ -145,6 +184,8 @@ def _dashboard_context(
         "app_name": settings.app_name,
         "active_profiles": active_profiles,
         "active_profile_count": len(active_profiles),
+        "archived_profiles": archived_profiles,
+        "archived_profile_count": len(archived_profiles),
         "recent_posts": recent_posts,
         "recent_post_cards": [_post_card(post) for post in recent_posts],
         "recent_post_days": 7,

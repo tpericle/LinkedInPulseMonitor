@@ -58,14 +58,18 @@ def test_dashboard_renders_project_name():
     assert "LinkedIn Pulse Monitor" in response.text
 
 
-def test_dashboard_renders_profile_administration_stub():
+def test_dashboard_renders_profile_administration_form():
     client = TestClient(app)
 
     response = client.get("/dashboard")
 
     assert response.status_code == 200
     assert "Profile administration" in response.text
-    assert "Coming next: add new profiles, archive profiles" in response.text
+    assert "Add a tracked LinkedIn profile" in response.text
+    assert 'action="/dashboard/profiles"' in response.text
+    assert 'name="linkedin_url"' in response.text
+    assert 'name="full_name"' in response.text
+    assert 'name="company"' in response.text
 
 
 def test_seed_sample_profiles_creates_three_active_starter_profiles(db_session: Session):
@@ -150,7 +154,9 @@ def test_dashboard_renders_active_profiles_and_hides_inactive_profiles(
     assert "Dr. Arthur Brooks" in response.text
     assert "Harvard" in response.text
     assert "https://www.linkedin.com/in/arthur-c-brooks/" in response.text
-    assert "Archived Person" not in response.text
+    assert "Archived profiles" in response.text
+    assert "Archived Person" in response.text
+    assert "Reactivate" in response.text
 
 
 def test_dashboard_explains_when_no_active_profiles(
@@ -210,7 +216,54 @@ def test_dashboard_profile_form_guides_invalid_linkedin_url(
     assert "https://www.linkedin.com/in/" in response.text
 
 
-def test_dashboard_renders_manual_fetch_button():
+def test_dashboard_archive_profile_deactivates_profile_and_confirms(
+    db_session: Session, client_with_db: TestClient
+):
+    person = Person(
+        full_name="Archive Me",
+        linkedin_url="https://www.linkedin.com/in/archive-me/",
+        is_active=True,
+    )
+    db_session.add(person)
+    db_session.commit()
+
+    response = client_with_db.post(
+        f"/dashboard/profiles/{person.id}/archive", follow_redirects=True
+    )
+
+    db_session.refresh(person)
+    assert response.status_code == 200
+    assert person.is_active is False
+    assert "Archived Archive Me" in response.text
+    assert "Archived profiles" in response.text
+    assert "Archive Me" in response.text
+    assert "Reactivate" in response.text
+
+
+def test_dashboard_reactivate_profile_activates_profile_and_confirms(
+    db_session: Session, client_with_db: TestClient
+):
+    person = Person(
+        full_name="Reactivate Me",
+        linkedin_url="https://www.linkedin.com/in/reactivate-me/",
+        is_active=False,
+    )
+    db_session.add(person)
+    db_session.commit()
+
+    response = client_with_db.post(
+        f"/dashboard/profiles/{person.id}/reactivate", follow_redirects=True
+    )
+
+    db_session.refresh(person)
+    assert response.status_code == 200
+    assert person.is_active is True
+    assert "Reactivated Reactivate Me" in response.text
+    assert "Reactivate Me" in response.text
+    assert "Archive" in response.text
+
+
+def test_dashboard_manual_fetch_button_renders_guarded_fetch_button():
     client = TestClient(app)
 
     response = client.get("/dashboard")

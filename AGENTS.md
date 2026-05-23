@@ -180,9 +180,12 @@ Implemented so far:
 - Dashboard was reorganized around:
   1. Priority feed.
   2. People we follow.
-  3. Profile administration placeholder.
+  3. Profile administration.
   4. Daily report.
 - Priority-feed post cards now show lightweight review/age badges, such as `Review today`, `Review window`, and relative age labels like `~3h ago`.
+- Profile administration now supports add, archive, and reactivate flows. Archived profiles remain stored but are excluded from active-profile fetches.
+- `docs/profile/tony-commentary-style.md` is the editable markdown starting point for Tony's future comment guidance.
+- `docs/plans/2026-05-23-regular-runs-admin-commentary.md` covers regular runs, administration, and markdown-based commentary suggestions.
 
 Latest known relevant commit from prior session:
 
@@ -207,18 +210,18 @@ scrape_runs: 1
 
 ## Current review focus
 
-Tony should review the priority feed after the review/age badge update:
+Tony should review the new profile administration section:
 
-- Does `Review today` make the newest 24-hour posts stand out enough?
-- Does `Review window` feel like the right label for older saved posts that are still useful for the 7-day dashboard review?
-- Are relative age labels like `~3h ago` and `~2d ago` easier to scan than timestamp alone?
-- Does the page flow still make sense: recent posts -> people followed -> admin?
+- Can he add a profile with URL, name, company/note, and optional tags?
+- Can he archive an active profile and see it move into `Archived profiles`?
+- Can he reactivate an archived profile and see it return to the active controls?
+- Does the administration section still feel simple enough below the clean priority feed?
 
 Recommended next development focus:
 
-1. If the badge language feels right, add simple reviewed/engaged state next.
-2. If the badge language is noisy, tune labels before adding new behavior.
-3. Do not add archive/delete/profile management until the main feed experience feels right.
+1. Add a one-command daily cycle script for fetch + report.
+2. Read `docs/profile/tony-commentary-style.md` from code and use it for mock comment starter ideas.
+3. Schedule the daily cycle only after the one-command version feels reliable and cost-safe.
 
 ## Documentation maintenance rule
 
@@ -231,6 +234,13 @@ As the project evolves, append updates rather than relying only on chat history.
   - `README.md` is the human-facing setup and usage file.
 
 ## Progress log
+
+### 2026-05-23 — Administration slice and next-step plan added
+
+- Added dashboard administration for profile add/archive/reactivate.
+- Added `docs/profile/tony-commentary-style.md` as the editable markdown starting point for Tony's future comment guidance.
+- Added `docs/plans/2026-05-23-regular-runs-admin-commentary.md` covering regular runs, administration, and commentary suggestions.
+- Verified with `uv run pytest -q`, `uv run ruff check .`, and a browser visual inspection.
 
 ### 2026-05-23 — Priority-feed review badges added
 

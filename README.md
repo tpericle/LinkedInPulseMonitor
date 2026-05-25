@@ -205,7 +205,7 @@ uv run ruff check .
 Latest known verification from this session:
 
 ```text
-.venv/bin/pytest -q  -> 52 passed
+.venv/bin/pytest -q  -> 53 passed
 .venv/bin/ruff check . -> All checks passed
 ```
 
@@ -270,7 +270,7 @@ Recommended next development focus:
 - Improved profile administration with browser confirmations for archive/reactivate, encoded PRG redirects back to the administration section, and clearer action confirmation text.
 - Added `scripts/daily_cycle.py` and `app/daily_cycle.py` for a one-command guarded fetch + mock report cycle.
 - Added `app/commentary_profile.py` so code can read and sectionize Tony's markdown commentary profile.
-- Latest verification: `.venv/bin/pytest -q` -> 52 passed; `.venv/bin/ruff check .` -> All checks passed.
+- Latest verification: `.venv/bin/pytest -q` -> 53 passed; `.venv/bin/ruff check .` -> All checks passed.
 
 ### 2026-05-23 — Administration slice and next-step plan added
 

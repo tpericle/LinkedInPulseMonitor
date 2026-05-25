@@ -212,6 +212,13 @@ def test_dashboard_profile_form_creates_profile_redirects_to_admin_and_confirms(
     assert "1 active profile configured" in refreshed.text
 
 
+def test_dashboard_profiles_get_redirects_to_administration(client_with_db: TestClient):
+    response = client_with_db.get("/dashboard/profiles", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/dashboard#profile-administration"
+
+
 def test_dashboard_profile_form_guides_invalid_linkedin_url(
     db_session: Session, client_with_db: TestClient
 ):

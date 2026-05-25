@@ -34,6 +34,11 @@ def dashboard(request: Request, db: Annotated[Session, Depends(get_db)]) -> HTML
     )
 
 
+@router.get("/dashboard/profiles")
+def dashboard_profiles_redirect() -> RedirectResponse:
+    return RedirectResponse(url="/dashboard#profile-administration", status_code=303)
+
+
 @router.post("/dashboard/profiles", response_model=None)
 async def create_dashboard_profile(
     request: Request,

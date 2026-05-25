@@ -199,7 +199,7 @@ d9edb02 Reorganize dashboard around recent posts
 Latest known verification from this session:
 
 ```text
-.venv/bin/pytest -q     # 52 passed
+.venv/bin/pytest -q     # 53 passed
 .venv/bin/ruff check .  # All checks passed
 ```
 
@@ -243,7 +243,7 @@ As the project evolves, append updates rather than relying only on chat history.
 - Improved profile administration with browser confirmations for archive/reactivate, encoded PRG redirects back to `#profile-administration`, and clearer action confirmation text.
 - Added `scripts/daily_cycle.py` and `app/daily_cycle.py` for a one-command guarded fetch + mock report cycle.
 - Added `app/commentary_profile.py` so code can read and sectionize Tony's markdown commentary profile.
-- Verified with `.venv/bin/pytest -q` (52 passed) and `.venv/bin/ruff check .`.
+- Verified with `.venv/bin/pytest -q` (53 passed) and `.venv/bin/ruff check .`.
 
 ### 2026-05-23 — Administration slice and next-step plan added
 

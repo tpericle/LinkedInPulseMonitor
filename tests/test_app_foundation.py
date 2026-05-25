@@ -488,3 +488,40 @@ def test_dashboard_daily_report_button_generates_report(
     assert stored_report.post_count == 1
     assert "Generated today’s mock report from 1 recent post" in response.text
     assert "Mock summary for 1 recent LinkedIn post." in response.text
+
+
+def test_dashboard_recent_post_cards_show_non_copy_paste_comment_starters(
+    db_session: Session, client_with_db: TestClient
+):
+    db_session.add(
+        Post(
+            source="apify",
+            source_post_id="post-with-starters",
+            author_name="Founder Author",
+            content="AI workflows are changing how founders build with customers.",
+            post_type="post",
+            authored_at=datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=2),
+            raw_json="{}",
+        )
+    )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Comment starter ideas" in response.text
+    assert "These are thinking prompts, not copy-paste comments." in response.text
+    assert (
+        "One angle Tony might explore: connect this post to AI and practical workflows."
+        in response.text
+    )
+    assert (
+        "A useful question Tony could ask: what is one practical next step "
+        "or tradeoff behind this idea?"
+        in response.text
+    )
+    assert (
+        "A personal observation Tony might add: relate the post to learning "
+        "in public with agent-assisted product building."
+        in response.text
+    )

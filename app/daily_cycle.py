@@ -37,16 +37,26 @@ def run_daily_cycle(db: Session, *, now: datetime | None = None) -> DailyCycleRe
 def format_daily_cycle_recap(result: DailyCycleResult) -> str:
     fetch = result.fetch_result
     cost = "unavailable" if fetch.usage_total_usd is None else f"${fetch.usage_total_usd}"
+    notification = _notification_recommendation(fetch.inserted_count)
     return "\n".join(
         [
             "Daily cycle complete",
-            f"profiles checked: {fetch.profiles_checked}",
-            f"items returned: {fetch.items_returned}",
-            f"parsed: {fetch.parsed_count}",
-            f"inserted: {fetch.inserted_count}",
-            f"skipped: {fetch.skipped_count}",
-            f"provider status: {fetch.status}",
-            f"cost: {cost}",
-            f"report id: {result.report_id}",
+            "What ran:",
+            f"- profiles checked: {fetch.profiles_checked}",
+            f"- items returned: {fetch.items_returned}",
+            f"- parsed: {fetch.parsed_count}",
+            f"- inserted: {fetch.inserted_count}",
+            f"- skipped: {fetch.skipped_count}",
+            f"- provider status: {fetch.status}",
+            f"- estimated Apify cost: {cost}",
+            f"- report id: {result.report_id}",
+            notification,
         ]
     )
+
+
+def _notification_recommendation(inserted_count: int) -> str:
+    if inserted_count == 0:
+        return "Notification recommendation: stay quiet; no new posts were saved."
+    post_word = "post" if inserted_count == 1 else "posts"
+    return f"Notification recommendation: notify Tony; {inserted_count} new {post_word} were saved."

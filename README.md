@@ -52,6 +52,7 @@ The prototype currently includes:
 - Admin add/archive/reactivate actions now use encoded post/redirect/get confirmations, return to the administration section, and require browser confirmation for archive/reactivate.
 - One-command daily cycle service and script for guarded fetch + mock report generation.
 - Commentary profile reader for `docs/profile/tony-commentary-style.md`.
+- Mock comment starter prompts on priority-feed cards, explicitly framed as thinking prompts rather than copy-paste comments.
 
 ## Current dashboard flow
 
@@ -60,7 +61,7 @@ The dashboard is organized as:
 1. **Priority feed**
    - Recent saved posts from the last 7 days.
    - Manual fetch button.
-   - Post cards with author, date, review/age badges, preview/hook, and direct LinkedIn link.
+   - Post cards with author, date, review/age badges, preview/hook, direct LinkedIn link, and mock comment starter ideas.
 
 2. **People we follow**
    - Active tracked profiles.
@@ -172,6 +173,16 @@ Use this after the active profile list and Apify guardrails feel right. It runs 
 uv run python scripts/daily_cycle.py
 ```
 
+The recap is intentionally reviewable before scheduling. Check:
+
+- how many active profiles were checked
+- how many Apify items came back
+- how many posts parsed, inserted, or skipped
+- provider status
+- estimated Apify cost
+- generated report id
+- whether the future notification behavior should notify Tony or stay quiet
+
 Normal daily behavior should remain last-24-hours unless an explicit backfill/review run is requested.
 
 ## Run tests
@@ -252,18 +263,21 @@ Cmd + Shift + R
 
 Review:
 
-1. Add a profile and confirm the page returns to `Profile administration`, shows the confirmation, and shows the newly active person.
-2. Archive an active profile and confirm the browser asks before changing it.
-3. Reactivate an archived profile and confirm the browser asks before changing it.
-4. Inspect `scripts/daily_cycle.py` as the new one-command guarded fetch + report entry point.
-5. Inspect `docs/profile/tony-commentary-style.md`; this is now readable by code through `app/commentary_profile.py`.
+1. Refresh the dashboard and inspect priority-feed cards. Confirm the comment starter area feels like useful thinking prompts, not copy-paste comments.
+2. Run `uv run python scripts/daily_cycle.py` and inspect the recap before scheduling anything.
+3. Confirm the recap makes the future notification behavior obvious: notify only when new posts were saved; otherwise stay quiet.
 
 Recommended next development focus:
 
-- Add mock comment starter prompts to priority-feed post cards using the markdown profile reader.
-- Add local scheduling docs only after the daily cycle command feels reliable and cost-safe.
+- Add local scheduling docs after Tony reviews the daily-cycle recap and confirms the cost/notification behavior feels safe.
+- Start replacing mock comment starters with more personalized guidance as Tony fills in `docs/profile/tony-commentary-style.md`.
 
 ## Progress log
+
+### 2026-05-24 — Comment starters and reviewable daily cycle recap
+
+- Added mock comment starter ideas to priority-feed cards, using the markdown commentary profile reader and clearly labeling them as thinking prompts rather than copy-paste comments.
+- Made the daily-cycle recap more reviewable before scheduling by listing what ran, estimated Apify cost, report id, and whether future notification behavior should notify Tony or stay quiet.
 
 ### 2026-05-24 — Admin confirmations, daily cycle, and commentary reader
 

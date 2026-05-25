@@ -9,6 +9,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.apify_http import ApifyHttpClient
+from app.commentary_profile import build_comment_starter_ideas, load_commentary_profile
 from app.config import get_settings
 from app.db import get_db
 from app.manual_fetch import (
@@ -188,6 +189,8 @@ def _dashboard_context(
     if latest_fetch:
         latest_fetch_at = latest_fetch.finished_at or latest_fetch.started_at
 
+    commentary_profile = load_commentary_profile()
+
     return {
         "app_name": settings.app_name,
         "active_profiles": active_profiles,
@@ -195,7 +198,7 @@ def _dashboard_context(
         "archived_profiles": archived_profiles,
         "archived_profile_count": len(archived_profiles),
         "recent_posts": recent_posts,
-        "recent_post_cards": [_post_card(post) for post in recent_posts],
+        "recent_post_cards": [_post_card(post, commentary_profile) for post in recent_posts],
         "recent_post_days": 7,
         "latest_fetch_at": latest_fetch_at,
         "latest_fetch_display": _format_datetime(latest_fetch_at),
@@ -212,7 +215,7 @@ def _format_datetime(value: datetime | None) -> str | None:
     return value.strftime("%Y-%m-%d %H:%M")
 
 
-def _post_card(post: Post) -> dict[str, object]:
+def _post_card(post: Post, commentary_profile) -> dict[str, object]:
     return {
         "author_name": post.author_name or "Unknown author",
         "linkedin_url": post.linkedin_url,
@@ -221,6 +224,7 @@ def _post_card(post: Post) -> dict[str, object]:
         "age_display": _format_age(post.authored_at),
         "review_label": _review_label(post.authored_at),
         "summary": _post_hook_summary(post.content),
+        "comment_starters": build_comment_starter_ideas(post.content, commentary_profile),
     }
 
 

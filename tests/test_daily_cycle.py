@@ -106,10 +106,37 @@ def test_daily_cycle_recap_is_concise_and_names_cost():
     recap = format_daily_cycle_recap(result)
 
     assert "Daily cycle complete" in recap
+    assert "What ran:" in recap
     assert "profiles checked: 1" in recap
     assert "items returned: 2" in recap
     assert "parsed: 2" in recap
     assert "inserted: 0" in recap
     assert "skipped: 2" in recap
-    assert "cost: unavailable" in recap
+    assert "provider status: SUCCEEDED" in recap
+    assert "estimated Apify cost: unavailable" in recap
     assert "report id: 7" in recap
+    assert "Notification recommendation: stay quiet; no new posts were saved." in recap
+
+
+def test_daily_cycle_recap_recommends_notification_when_new_posts_exist():
+    result = DailyCycleResult(
+        fetch_result=ManualFetchResult(
+            profiles_checked=3,
+            items_returned=6,
+            parsed_count=5,
+            inserted_count=2,
+            skipped_count=3,
+            provider_run_id="run-456",
+            provider_dataset_id="dataset-456",
+            status="SUCCEEDED",
+            usage_total_usd=0.031,
+            charged_event_counts={"post": 6},
+        ),
+        report_id=8,
+    )
+
+    recap = format_daily_cycle_recap(result)
+
+    assert "inserted: 2" in recap
+    assert "estimated Apify cost: $0.031" in recap
+    assert "Notification recommendation: notify Tony; 2 new posts were saved." in recap

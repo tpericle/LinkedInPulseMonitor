@@ -178,7 +178,7 @@ def test_dashboard_explains_when_no_active_profiles(
     assert "Manual fetch needs at least one active profile before it can run." in response.text
 
 
-def test_dashboard_profile_form_creates_profile_and_confirms(
+def test_dashboard_profile_form_creates_profile_redirects_to_admin_and_confirms(
     db_session: Session, client_with_db: TestClient
 ):
     response = client_with_db.post(
@@ -189,17 +189,27 @@ def test_dashboard_profile_form_creates_profile_and_confirms(
             "company": "HubSpot",
             "tags": "startup, marketing",
         },
-        follow_redirects=True,
+        follow_redirects=False,
     )
 
     stored_person = db_session.scalars(select(Person)).one()
-    assert response.status_code == 200
+    assert response.status_code == 303
+    assert response.headers["location"] == (
+        "/dashboard?success=Added+Dharmesh+Shah+to+active+profiles"
+        "#profile-administration"
+    )
     assert stored_person.linkedin_url == "https://www.linkedin.com/in/dharmesh/"
     assert stored_person.full_name == "Dharmesh Shah"
     assert stored_person.company == "HubSpot"
     assert stored_person.tags_json == '["startup", "marketing"]'
-    assert "Now following Dharmesh Shah" in response.text
-    assert "Dharmesh Shah" in response.text
+
+    refreshed = client_with_db.get(response.headers["location"])
+    assert refreshed.status_code == 200
+    assert "Added Dharmesh Shah to active profiles" in refreshed.text
+    assert "Profile administration" in refreshed.text
+    assert "Dharmesh Shah" in refreshed.text
+    assert "HubSpot" in refreshed.text
+    assert "1 active profile configured" in refreshed.text
 
 
 def test_dashboard_profile_form_guides_invalid_linkedin_url(
@@ -228,16 +238,23 @@ def test_dashboard_archive_profile_deactivates_profile_and_confirms(
     db_session.commit()
 
     response = client_with_db.post(
-        f"/dashboard/profiles/{person.id}/archive", follow_redirects=True
+        f"/dashboard/profiles/{person.id}/archive", follow_redirects=False
     )
 
     db_session.refresh(person)
-    assert response.status_code == 200
+    assert response.status_code == 303
+    assert response.headers["location"] == (
+        "/dashboard?success=Archived+Archive+Me.+They+will+not+be+included+in+future+fetches."
+        "#profile-administration"
+    )
     assert person.is_active is False
-    assert "Archived Archive Me" in response.text
-    assert "Archived profiles" in response.text
-    assert "Archive Me" in response.text
-    assert "Reactivate" in response.text
+
+    refreshed = client_with_db.get(response.headers["location"])
+    assert refreshed.status_code == 200
+    assert "Archived Archive Me. They will not be included in future fetches." in refreshed.text
+    assert "Archived profiles" in refreshed.text
+    assert "Archive Me" in refreshed.text
+    assert "Reactivate" in refreshed.text
 
 
 def test_dashboard_reactivate_profile_activates_profile_and_confirms(
@@ -252,15 +269,56 @@ def test_dashboard_reactivate_profile_activates_profile_and_confirms(
     db_session.commit()
 
     response = client_with_db.post(
-        f"/dashboard/profiles/{person.id}/reactivate", follow_redirects=True
+        f"/dashboard/profiles/{person.id}/reactivate", follow_redirects=False
     )
 
     db_session.refresh(person)
-    assert response.status_code == 200
+    assert response.status_code == 303
+    assert response.headers["location"] == (
+        "/dashboard?success=Reactivated+Reactivate+Me.+They+will+be+included+in+future+fetches."
+        "#profile-administration"
+    )
     assert person.is_active is True
-    assert "Reactivated Reactivate Me" in response.text
-    assert "Reactivate Me" in response.text
-    assert "Archive" in response.text
+
+    refreshed = client_with_db.get(response.headers["location"])
+    assert refreshed.status_code == 200
+    assert "Reactivated Reactivate Me. They will be included in future fetches." in refreshed.text
+    assert "Reactivate Me" in refreshed.text
+    assert "Archive" in refreshed.text
+
+
+def test_dashboard_admin_actions_use_confirmation_prompts(
+    db_session: Session, client_with_db: TestClient
+):
+    db_session.add_all(
+        [
+            Person(
+                full_name="Active Person",
+                linkedin_url="https://www.linkedin.com/in/active-person/",
+                is_active=True,
+            ),
+            Person(
+                full_name="Inactive Person",
+                linkedin_url="https://www.linkedin.com/in/inactive-person/",
+                is_active=False,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard")
+
+    assert response.status_code == 200
+    assert 'id="profile-administration"' in response.text
+    archive_confirm = (
+        "return confirm('Archive this profile? "
+        "It will stop appearing in future fetches.');"
+    )
+    reactivate_confirm = (
+        "return confirm('Reactivate this profile? It will be included in future fetches.');"
+    )
+    assert archive_confirm in response.text
+    assert reactivate_confirm in response.text
 
 
 def test_dashboard_manual_fetch_button_renders_guarded_fetch_button():

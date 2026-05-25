@@ -49,7 +49,9 @@ The prototype currently includes:
 - Real Apify fetch path validated.
 - Dashboard reorganized around the priority feed and tracked people.
 - Dashboard profile administration for adding, archiving, and reactivating tracked profiles.
-- Planning docs for regular runs, administration, and markdown-based commentary guidance.
+- Admin add/archive/reactivate actions now use encoded post/redirect/get confirmations, return to the administration section, and require browser confirmation for archive/reactivate.
+- One-command daily cycle service and script for guarded fetch + mock report generation.
+- Commentary profile reader for `docs/profile/tony-commentary-style.md`.
 
 ## Current dashboard flow
 
@@ -162,9 +164,15 @@ A prior review run used a wider explicit lookback to populate dashboard data:
 uv run python scripts/manual_apify_fetch.py --lookback-hours 72 --limit-per-source 10 --max-total-charge-usd 1.00
 ```
 
-Normal daily behavior should remain last-24-hours unless an explicit backfill/review run is requested.
+## Run a daily fetch + report cycle
 
-From the dashboard, use **Fetch latest posts now**. The manual fetch flow should stay guarded and explain what happened.
+Use this after the active profile list and Apify guardrails feel right. It runs the guarded Apify fetch and then generates the mock daily report:
+
+```bash
+uv run python scripts/daily_cycle.py
+```
+
+Normal daily behavior should remain last-24-hours unless an explicit backfill/review run is requested.
 
 ## Run tests
 
@@ -197,8 +205,8 @@ uv run ruff check .
 Latest known verification from this session:
 
 ```text
-uv run pytest -q      -> 45 passed
-uv run ruff check .   -> All checks passed
+.venv/bin/pytest -q  -> 52 passed
+.venv/bin/ruff check . -> All checks passed
 ```
 
 ## Development approach
@@ -244,18 +252,25 @@ Cmd + Shift + R
 
 Review:
 
-1. Can you add a profile with URL, name, company/note, and optional tags?
-2. Can you archive an active profile and see it move into `Archived profiles`?
-3. Can you reactivate an archived profile and see it return to the active controls?
-4. Does the administration section still feel simple enough below the clean priority feed?
+1. Add a profile and confirm the page returns to `Profile administration`, shows the confirmation, and shows the newly active person.
+2. Archive an active profile and confirm the browser asks before changing it.
+3. Reactivate an archived profile and confirm the browser asks before changing it.
+4. Inspect `scripts/daily_cycle.py` as the new one-command guarded fetch + report entry point.
+5. Inspect `docs/profile/tony-commentary-style.md`; this is now readable by code through `app/commentary_profile.py`.
 
 Recommended next development focus:
 
-- Add a one-command daily cycle script for fetch + report.
-- Read `docs/profile/tony-commentary-style.md` from code and use it for mock comment starter ideas.
-- Schedule the daily cycle only after the one-command version feels reliable and cost-safe.
+- Add mock comment starter prompts to priority-feed post cards using the markdown profile reader.
+- Add local scheduling docs only after the daily cycle command feels reliable and cost-safe.
 
 ## Progress log
+
+### 2026-05-24 — Admin confirmations, daily cycle, and commentary reader
+
+- Improved profile administration with browser confirmations for archive/reactivate, encoded PRG redirects back to the administration section, and clearer action confirmation text.
+- Added `scripts/daily_cycle.py` and `app/daily_cycle.py` for a one-command guarded fetch + mock report cycle.
+- Added `app/commentary_profile.py` so code can read and sectionize Tony's markdown commentary profile.
+- Latest verification: `.venv/bin/pytest -q` -> 52 passed; `.venv/bin/ruff check .` -> All checks passed.
 
 ### 2026-05-23 — Administration slice and next-step plan added
 

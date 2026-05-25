@@ -98,12 +98,16 @@
     {% endif %}
   </section>
 
-  <section class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
-    <p class="text-sm uppercase tracking-wide text-sky-400">Administration</p>
+  <section id="profile-administration" class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
     <h2 class="mt-2 text-2xl font-bold">Profile administration</h2>
     <p class="mt-2 max-w-2xl text-sm text-slate-400">
       Add new people to the monitoring list, archive people we no longer want to fetch, or reactivate archived profiles later. Archived profiles stay in the database but are excluded from fetches.
     </p>
+    {% if success_message %}
+      <div class="mt-4 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200" role="status" aria-live="polite">
+        {{ success_message }}
+      </div>
+    {% endif %}
     {% if form_error %}
       <div class="mt-4 rounded-lg border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">
         {{ form_error }}
@@ -138,7 +142,7 @@
                   <p class="text-sm font-medium text-slate-100">{{ profile.full_name or profile.linkedin_url }}</p>
                   <p class="mt-1 break-all text-xs text-slate-500">{{ profile.linkedin_url }}</p>
                 </div>
-                <form method="post" action="/dashboard/profiles/{{ profile.id }}/archive">
+                <form method="post" action="/dashboard/profiles/{{ profile.id }}/archive" onsubmit="return confirm('Archive this profile? It will stop appearing in future fetches.');">
                   <button class="rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/10" type="submit">Archive</button>
                 </form>
               </div>
@@ -160,7 +164,7 @@
                 <p class="text-sm font-medium text-slate-100">{{ profile.full_name or profile.linkedin_url }}</p>
                 <p class="mt-1 break-all text-xs text-slate-500">{{ profile.linkedin_url }}</p>
               </div>
-              <form method="post" action="/dashboard/profiles/{{ profile.id }}/reactivate">
+              <form method="post" action="/dashboard/profiles/{{ profile.id }}/reactivate" onsubmit="return confirm('Reactivate this profile? It will be included in future fetches.');">
                 <button class="rounded-lg border border-emerald-500/40 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/10" type="submit">Reactivate</button>
               </form>
             </div>

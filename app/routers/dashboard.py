@@ -61,10 +61,7 @@ async def create_dashboard_profile(
         tags=tags,
     )
     display_name = person.full_name or person.linkedin_url
-    return RedirectResponse(
-        url=f"/dashboard?success=Now following {display_name}",
-        status_code=303,
-    )
+    return _admin_redirect(f"Added {display_name} to active profiles")
 
 
 @router.post("/dashboard/profiles/{person_id}/archive")
@@ -79,9 +76,8 @@ def archive_dashboard_profile(
     person.is_active = False
     db.commit()
     display_name = person.full_name or person.linkedin_url
-    return RedirectResponse(
-        url=f"/dashboard?success={quote(f'Archived {display_name}')}",
-        status_code=303,
+    return _admin_redirect(
+        f"Archived {display_name}. They will not be included in future fetches."
     )
 
 
@@ -97,9 +93,8 @@ def reactivate_dashboard_profile(
     person.is_active = True
     db.commit()
     display_name = person.full_name or person.linkedin_url
-    return RedirectResponse(
-        url=f"/dashboard?success={quote(f'Reactivated {display_name}')}",
-        status_code=303,
+    return _admin_redirect(
+        f"Reactivated {display_name}. They will be included in future fetches."
     )
 
 
@@ -138,6 +133,14 @@ def _run_dashboard_manual_fetch(db: Session) -> ManualFetchResult:
 
     with ApifyHttpClient(token=settings.apify_token) as client:
         return run_manual_apify_fetch(db, client=client, actor_id=settings.apify_actor_id)
+
+
+def _admin_redirect(message: str) -> RedirectResponse:
+    query_string = urlencode({"success": message})
+    return RedirectResponse(
+        url=f"/dashboard?{query_string}#profile-administration",
+        status_code=303,
+    )
 
 
 def _blank_to_none(value: str) -> str | None:

@@ -9,9 +9,11 @@ from sqlalchemy.pool import StaticPool
 
 import app.models  # noqa: F401
 from app.db import Base, get_db
+from app.event_detection import has_possible_event_language
 from app.main import app
 from app.manual_fetch import ManualFetchResult
 from app.models import DailyReport, Person, Post, ScrapeRun
+from app.reports import generate_daily_report
 from app.sample_profiles import SAMPLE_PROFILES, seed_sample_profiles
 
 
@@ -676,6 +678,88 @@ def test_dashboard_delete_paused_profile_keeps_historical_posts(
     assert stored_post.person_id is None
     assert stored_post.content == "Historical post should remain."
     assert "Deleted Paused Delete. Historical posts were kept." in response.text
+
+
+def test_favicon_route_stops_browser_404_noise():
+    client = TestClient(app)
+
+    response = client.get("/favicon.ico")
+
+    assert response.status_code == 204
+
+
+def test_event_detection_flags_live_and_time_sensitive_posts():
+    assert has_possible_event_language(
+        "Join us live tonight at 8PM EST for a practical webinar on AI workflows."
+    )
+    assert has_possible_event_language(
+        "I'm presenting next Thursday at the leadership summit. Register here."
+    )
+    assert not has_possible_event_language(
+        "A short reflection on better meetings and clearer work habits."
+    )
+
+
+def test_dashboard_post_cards_badge_possible_event_posts(
+    db_session: Session, client_with_db: TestClient
+):
+    db_session.add(
+        Post(
+            source="apify",
+            source_post_id="event-post",
+            author_name="Event Author",
+            content="Join us live tonight at 8PM EST for a product leadership webinar.",
+            post_type="post",
+            authored_at=datetime.now(UTC).replace(tzinfo=None) - timedelta(hours=1),
+            raw_json="{}",
+        )
+    )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Event Author" in response.text
+    assert "Possible event" in response.text
+    assert (
+        "This post may mention a live event, webinar, presentation, or time-sensitive opportunity."
+        in response.text
+    )
+
+
+def test_daily_report_calls_out_possible_events(db_session: Session):
+    now = datetime(2026, 5, 27, 18, 0, tzinfo=UTC)
+    db_session.add_all(
+        [
+            Post(
+                source="apify",
+                source_post_id="report-event-post",
+                author_name="Event Report Author",
+                content="Register for tomorrow's live session on practical AI adoption.",
+                post_type="post",
+                authored_at=now.replace(tzinfo=None) - timedelta(hours=2),
+                raw_json="{}",
+            ),
+            Post(
+                source="apify",
+                source_post_id="report-normal-post",
+                author_name="Normal Report Author",
+                content="A normal reflection that should not be flagged as an event.",
+                post_type="post",
+                authored_at=now.replace(tzinfo=None) - timedelta(hours=3),
+                raw_json="{}",
+            ),
+        ]
+    )
+    db_session.commit()
+
+    result = generate_daily_report(db_session, now=now)
+    report = db_session.get_one(DailyReport, result.report_id)
+
+    assert "Possible events to review: 1" in report.summary_text
+    assert "Event Report Author" in report.notable_posts_json
+    assert '"possible_event": true' in report.notable_posts_json
+    assert '"possible_event": false' in report.notable_posts_json
 
 
 def test_dashboard_fetch_confirmation_explains_profiles_and_lookbacks(

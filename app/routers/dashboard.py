@@ -14,6 +14,7 @@ from app.apify_http import ApifyHttpClient
 from app.commentary_profile import build_comment_starter_ideas, load_commentary_profile
 from app.config import get_settings
 from app.db import get_db
+from app.event_detection import has_possible_event_language
 from app.manual_fetch import (
     DEFAULT_LIMIT_PER_SOURCE,
     DEFAULT_MAX_PROFILES,
@@ -394,6 +395,7 @@ def _dashboard_context(
     recent_post_cards = [_post_card(post, commentary_profile) for post in recent_posts]
     visible_recent_post_cards = recent_post_cards[:5]
     extra_recent_post_cards = recent_post_cards[5:]
+    possible_event_cards = [post for post in recent_post_cards if post["possible_event"]]
 
     return {
         "app_name": settings.app_name,
@@ -407,6 +409,7 @@ def _dashboard_context(
         "visible_recent_post_cards": visible_recent_post_cards,
         "extra_recent_post_cards": extra_recent_post_cards,
         "extra_recent_post_count": len(extra_recent_post_cards),
+        "possible_event_cards": possible_event_cards,
         "recent_post_days": 7,
         "normal_fetch_hours": 24,
         "new_profile_fetch_days": 7,
@@ -438,6 +441,7 @@ def _post_card(post: Post, commentary_profile) -> dict[str, object]:
         "authored_at_display": _format_datetime(post.authored_at),
         "age_display": _format_age(post.authored_at),
         "review_label": _review_label(post.authored_at),
+        "possible_event": has_possible_event_language(post.content),
         "summary": _post_hook_summary(post.content),
         "comment_starters": build_comment_starter_ideas(post.content, commentary_profile),
     }

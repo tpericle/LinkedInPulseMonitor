@@ -59,6 +59,7 @@ def test_generate_daily_report_summarizes_posts_from_last_24_hours(db_session: S
             "author_name": "Recent Author",
             "content": "AI agents are changing how teams learn from customers.",
             "linkedin_url": None,
+            "possible_event": False,
         }
     ]
 

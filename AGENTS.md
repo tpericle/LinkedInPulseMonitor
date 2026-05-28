@@ -191,6 +191,8 @@ Implemented so far:
 - `scripts/daily_cycle.py` and `app/daily_cycle.py` provide a one-command guarded fetch + mock report cycle with a reviewable recap: profiles checked, items returned, parsed/inserted/skipped counts, provider status, estimated Apify cost, report id, and notify-or-stay-quiet recommendation.
 - `docs/profile/tony-commentary-style.md` is the editable markdown starting point for Tony's future comment guidance.
 - `app/commentary_profile.py` reads and sectionizes the commentary markdown for future mock comment starter prompts.
+- `app/event_detection.py` performs lightweight possible-event detection for obvious live sessions, webinars, presentations, registration prompts, and time-sensitive posts.
+- Dashboard post cards show a **Possible event** badge/explanation when event-like language is detected; the Daily report area also lists **Possible events to review** for manual inspection before any notification/calendar automation.
 - `docs/plans/2026-05-23-regular-runs-admin-commentary.md` covers regular runs, administration, and markdown-based commentary suggestions.
 
 Latest known relevant commit from prior session:
@@ -202,7 +204,7 @@ d9edb02 Reorganize dashboard around recent posts
 Latest known verification from this session:
 
 ```text
-uv run pytest -q      # 63 passed
+uv run pytest -q      # 67 passed
 uv run ruff check .   # All checks passed
 ```
 
@@ -221,13 +223,14 @@ Tony should review:
 - Add or edit a profile and confirm the success message makes it obvious the profile will be included in the next fetch.
 - Use **Fetch Details** and confirm the confirmation page lists active profiles and clearly explains the 24-hour normal lookback plus 7-day initial lookback for newly added profiles.
 - Execute a fetch and confirm the recap makes saved/skipped/no-new-post outcomes understandable.
+- Confirm possible-event badges flag live/event-like posts and that the Daily report area lists **Possible events to review** without implying calendar/email automation exists yet.
 - Pause a test profile and confirm delete is available only after pause, while historical posts remain.
 
 Recommended next development focus:
 
-1. Have Tony test whether the new fetch confirmation/result recap removes the “nothing happened” feeling after adding a new profile.
-2. Consider simple event/live-presentation detection callouts before adding email or calendar automation.
-3. Start replacing mock comment starters with more personalized guidance as Tony provides fuller Markdown profile/voice files.
+1. Have Tony test whether possible-event detection catches useful event/live-presentation posts without too many false positives.
+2. Start replacing mock comment starters with more personalized guidance as Tony provides fuller Markdown profile/voice files.
+3. Add notification previews before any real email/text/calendar automation.
 
 ## Documentation maintenance rule
 
@@ -240,6 +243,15 @@ As the project evolves, append updates rather than relying only on chat history.
   - `README.md` is the human-facing setup and usage file.
 
 ## Progress log
+
+### 2026-05-27 — Possible-event callouts and operator cleanup
+
+- Added `app/event_detection.py` with explainable keyword/time-context detection for possible live events, webinars, presentations, and registration prompts.
+- Dashboard post cards now show **Possible event** badges with a manual-review explanation.
+- The Daily report area shows **Possible events to review** callouts before any notification/calendar automation exists.
+- Mock daily reports now include a possible-event count in the summary and mark notable posts with a `possible_event` boolean.
+- Added `/favicon.ico` no-content route to remove browser favicon 404 noise during local smoke tests.
+- Began tracking `uv.lock` for reproducible `uv` installs.
 
 ### 2026-05-27 — Profile management and fetch confirmation UX
 

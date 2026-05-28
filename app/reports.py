@@ -5,6 +5,7 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.event_detection import has_possible_event_language
 from app.models import DailyReport, Post
 
 
@@ -28,7 +29,12 @@ def generate_daily_report(
 
     post_count = len(recent_posts)
     post_word = "post" if post_count == 1 else "posts"
+    possible_event_count = sum(
+        1 for post in recent_posts if has_possible_event_language(post.content)
+    )
     summary_text = f"Mock summary for {post_count} recent LinkedIn {post_word}."
+    if possible_event_count:
+        summary_text += f" Possible events to review: {possible_event_count}."
     themes_json = json.dumps(_mock_themes(recent_posts))
     notable_posts_json = json.dumps(_notable_posts(recent_posts))
 
@@ -59,12 +65,13 @@ def _mock_themes(posts: list[Post]) -> list[dict[str, object]]:
     return [{"theme": "AI", "confidence": 1.0, "post_count": len(posts)}]
 
 
-def _notable_posts(posts: list[Post]) -> list[dict[str, str | None]]:
+def _notable_posts(posts: list[Post]) -> list[dict[str, object]]:
     return [
         {
             "author_name": post.author_name,
             "content": post.content,
             "linkedin_url": post.linkedin_url,
+            "possible_event": has_possible_event_language(post.content),
         }
         for post in posts
     ]

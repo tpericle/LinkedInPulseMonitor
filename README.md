@@ -55,6 +55,9 @@ The prototype currently includes:
 - One-command daily cycle service and script for guarded fetch + mock report generation.
 - Commentary profile reader for `docs/profile/tony-commentary-style.md`.
 - Mock comment starter prompts on priority-feed cards, explicitly framed as thinking prompts rather than copy-paste comments.
+- Lightweight possible-event detection for obvious live sessions, webinars, presentations, registration prompts, or time-sensitive opportunities.
+- Possible-event badges on dashboard post cards plus a manual-review callout in the Daily report area when event-like posts are present.
+- `/favicon.ico` returns a no-content response so browser smoke tests no longer show favicon 404 noise.
 
 ## Current dashboard flow
 
@@ -63,7 +66,7 @@ The dashboard is organized as:
 1. **Priority feed**
    - Recent saved posts from the last 7 days.
    - Manual fetch button.
-   - Post cards with author, date, review/age badges, preview/hook, direct LinkedIn link, and mock comment starter ideas.
+   - Post cards with author, date, review/age badges, possible-event badges when detected, preview/hook, direct LinkedIn link, and mock comment starter ideas.
 
 2. **People we follow**
    - Active tracked profiles.
@@ -79,6 +82,7 @@ The dashboard is organized as:
 
 4. **Daily report**
    - Mock/no-op by default until a real AI provider is intentionally configured.
+   - Shows a **Possible events to review** callout when recent saved posts appear to mention live events, webinars, presentations, or other time-sensitive opportunities.
 
 ## Product conventions
 
@@ -220,7 +224,7 @@ uv run ruff check .
 Latest known verification from this session:
 
 ```text
-uv run pytest -q      -> 63 passed
+uv run pytest -q      -> 67 passed
 uv run ruff check .   -> All checks passed
 ```
 
@@ -270,15 +274,24 @@ Review:
 1. Add or edit a profile and confirm the interface clearly shows that it will be included in the next fetch.
 2. Use **Fetch Details** and confirm the fetch confirmation explains active profiles, 24-hour normal lookback, 7-day initial lookback for new profiles, limits, and skip behavior.
 3. Execute the fetch and confirm the recap makes saved/skipped/no-new-post outcomes understandable.
-4. Pause a test profile and confirm delete is available only after it is paused.
+4. Confirm any event-like post shows a **Possible event** badge and that the Daily report area lists **Possible events to review** for manual inspection.
+5. Pause a test profile and confirm delete is available only after it is paused.
 
 Recommended next development focus:
 
-- Have Tony test whether the new fetch confirmation/result recap removes the “nothing happened” feeling after adding a new profile.
-- Consider simple event/live-presentation detection callouts before adding email or calendar automation.
+- Have Tony test whether possible-event badges correctly flag useful live/event posts without creating too many false positives.
 - Start replacing mock comment starters with more personalized guidance as Tony provides fuller Markdown profile/voice files.
+- After event detection feels useful, add notification previews before actual email/text/calendar automation.
 
 ## Progress log
+
+### 2026-05-27 — Possible-event callouts and operator cleanup
+
+- Added lightweight possible-event detection for obvious live sessions, webinars, presentations, registration prompts, and time-sensitive posts.
+- Added **Possible event** badges to dashboard post cards and a **Possible events to review** callout in the Daily report area.
+- Updated mock daily reports to count possible events in the summary and mark notable posts with a `possible_event` flag.
+- Added a `/favicon.ico` no-content route to remove browser favicon 404 noise during local smoke tests.
+- Began tracking `uv.lock` so `uv` installs are more reproducible.
 
 ### 2026-05-27 — Profile management and fetch confirmation UX
 

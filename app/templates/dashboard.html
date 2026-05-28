@@ -6,7 +6,7 @@
     <p class="text-sm uppercase tracking-wide text-sky-400">Local prototype</p>
     <h1 class="mt-3 text-4xl font-bold">{{ app_name }}</h1>
     <p class="mt-4 max-w-3xl text-slate-300">
-      A focused LinkedIn monitoring dashboard: recent posts first, then the people being followed, then profile administration.
+      A focused LinkedIn monitoring dashboard: weekly activity first, then the people being followed, then profile administration.
     </p>
 
     {% if success_message %}
@@ -23,21 +23,64 @@
     {% endif %}
   </div>
 
+  {% if show_fetch_confirmation %}
+    <section id="fetch-confirmation" class="rounded-2xl border border-emerald-500/40 bg-emerald-950/40 p-6 shadow-xl">
+      <p class="text-sm uppercase tracking-wide text-emerald-300">Fetch confirmation</p>
+      <h2 class="mt-2 text-2xl font-bold">Confirm fetch latest posts</h2>
+      <p class="mt-2 max-w-3xl text-sm text-emerald-100">
+        The system will now look for LinkedIn posts from your active profiles. Existing profiles use the normal daily window. New profiles get a one-time initial review window so you can see recent activity after adding them.
+      </p>
+      <div class="mt-5 grid gap-4 md:grid-cols-2">
+        <div class="rounded-xl border border-emerald-500/30 bg-slate-950/60 p-4">
+          <h3 class="font-semibold text-slate-100">What this will do</h3>
+          <ul class="mt-3 list-disc space-y-2 pl-5 text-sm text-slate-300">
+            <li>Check {{ active_profile_count }} active profile{% if active_profile_count != 1 %}s{% endif %}.</li>
+            <li>Existing profiles: last {{ normal_fetch_hours }} hours.</li>
+            <li>New profiles: initial {{ new_profile_fetch_days }}-day lookback.</li>
+            <li>Ask Apify for up to {{ limit_per_source }} latest posts per profile.</li>
+            <li>Skip posts already saved, outside the lookback window, or unparseable.</li>
+            <li>Safety limit: no more than {{ active_profile_limit }} active profiles.</li>
+            <li>Max Apify charge guardrail: ${{ max_total_charge_usd }}.</li>
+          </ul>
+        </div>
+        <div class="rounded-xl border border-emerald-500/30 bg-slate-950/60 p-4">
+          <h3 class="font-semibold text-slate-100">Active profiles included</h3>
+          {% if active_profiles %}
+            <ul class="mt-3 space-y-2 text-sm text-slate-300">
+              {% for profile in active_profiles %}
+                <li>
+                  <span class="font-medium text-slate-100">{{ profile.full_name or profile.linkedin_url }}</span>
+                  <span class="block break-all text-xs text-slate-500">{{ profile.linkedin_url }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="mt-3 text-sm text-amber-200">No active profiles configured. Add a profile before fetching.</p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="mt-5 flex flex-wrap gap-3">
+        <a class="rounded-lg border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800" href="/dashboard">Cancel</a>
+        <form method="post" action="/dashboard/fetch/apify/execute">
+          <button class="rounded-lg bg-emerald-500 px-4 py-2 text-sm font-semibold text-slate-950 hover:bg-emerald-400" type="submit">Execute fetch</button>
+        </form>
+      </div>
+    </section>
+  {% endif %}
+
   <section class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
       <div>
-        <p class="text-sm uppercase tracking-wide text-sky-400">Priority feed</p>
-        <h2 class="mt-2 text-2xl font-bold">Recent posts from the last {{ recent_post_days }} days</h2>
+        <p class="text-sm uppercase tracking-wide text-sky-400">Activity feed</p>
+        <h2 class="mt-2 text-2xl font-bold">Activity from the last {{ recent_post_days }} days</h2>
         <p class="mt-2 max-w-2xl text-sm text-slate-400">
-          These are the newest saved posts from the people we are following. Each item shows the author, date, hook, and direct LinkedIn post link.
+          These are the newest saved posts from the people you actively follow. Normal fetches look for the last {{ normal_fetch_hours }} hours; newly added profiles get an initial {{ new_profile_fetch_days }}-day lookback.
         </p>
         {% if latest_fetch_display %}
           <p class="mt-2 text-xs text-slate-500">Last fetch: {{ latest_fetch_display }}</p>
         {% endif %}
       </div>
-      <form method="post" action="/dashboard/fetch/apify">
-        <button class="rounded-lg bg-emerald-500 px-4 py-2 font-semibold text-slate-950 hover:bg-emerald-400" type="submit">Fetch latest posts now</button>
-      </form>
+      <a class="rounded-lg bg-emerald-500 px-4 py-2 text-center font-semibold text-slate-950 hover:bg-emerald-400" href="/dashboard/fetch/apify">Review fetch details</a>
     </div>
 
     {% if recent_post_cards %}
@@ -65,7 +108,7 @@
             {% if post.comment_starters %}
               <div class="mt-4 rounded-lg border border-slate-800 bg-slate-900/80 p-4">
                 <h4 class="text-sm font-semibold text-slate-100">Comment starter ideas</h4>
-                <p class="mt-1 text-xs text-slate-500">These are thinking prompts, not copy-paste comments.</p>
+                <p class="mt-1 text-xs text-slate-500">These are thinking prompts, not copy-paste comments. They are guided by docs/profile/tony-commentary-style.md.</p>
                 <ul class="mt-3 list-disc space-y-2 pl-5 text-sm leading-6 text-slate-300">
                   {% for starter in post.comment_starters %}
                     <li>{{ starter }}</li>
@@ -79,24 +122,22 @@
     {% else %}
       <div class="mt-6 rounded-xl border border-slate-700 bg-slate-950/50 p-5">
         <p class="text-sm text-slate-400">Nothing posted in the last {{ recent_post_days }} days.</p>
+        <p class="mt-1 text-xs text-slate-500">If a fetch just ran, this can simply mean there were no new posts in the current lookback window.</p>
       </div>
     {% endif %}
   </section>
 
   <section class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
     <p class="text-sm uppercase tracking-wide text-sky-400">People we follow</p>
-    <h2 class="mt-2 text-2xl font-bold">These are the people that we’re following</h2>
+    <h2 class="mt-2 text-2xl font-bold">Active profiles</h2>
     {% if active_profiles %}
       <p class="mt-2 text-sm text-slate-400">
-        {{ active_profile_count }} active profile{% if active_profile_count != 1 %}s{% endif %} configured.
+        {{ active_profile_count }} of {{ active_profile_limit }} active profile{% if active_profile_count != 1 %}s{% endif %} configured. These profiles are included in fetches.
       </p>
       <div class="mt-6 grid gap-4 md:grid-cols-3">
         {% for profile in active_profiles %}
           <article class="rounded-xl border border-slate-700 bg-slate-950/50 p-5">
             <h3 class="font-semibold text-slate-100">{{ profile.full_name or profile.linkedin_url }}</h3>
-            {% if profile.company %}
-              <p class="mt-2 text-sm leading-6 text-slate-400">{{ profile.company }}</p>
-            {% endif %}
             <a class="mt-3 block break-all text-sm font-semibold text-sky-300 hover:text-sky-200" href="{{ profile.linkedin_url }}" target="_blank" rel="noreferrer">Open profile →</a>
           </article>
         {% endfor %}
@@ -112,7 +153,7 @@
   <section id="profile-administration" class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl">
     <h2 class="mt-2 text-2xl font-bold">Profile administration</h2>
     <p class="mt-2 max-w-2xl text-sm text-slate-400">
-      Add new people to the monitoring list, archive people we no longer want to fetch, or reactivate archived profiles later. Archived profiles stay in the database but are excluded from fetches.
+      Add people to the monitoring list, edit display names and URLs, pause tracking for people you no longer want to fetch, or reactivate paused profiles later. Paused profiles stay saved but are excluded from fetches. Delete is available only after a profile is paused.
     </p>
     {% if success_message %}
       <div class="mt-4 rounded-lg border border-emerald-500/40 bg-emerald-500/10 p-3 text-sm text-emerald-200" role="status" aria-live="polite">
@@ -128,17 +169,12 @@
     <div class="mt-6 grid gap-6 lg:grid-cols-2">
       <form class="rounded-xl border border-slate-700 bg-slate-950/50 p-5" method="post" action="/dashboard/profiles">
         <h3 class="font-semibold text-slate-100">Add a tracked LinkedIn profile</h3>
+        <p class="mt-2 text-sm text-slate-400">You can keep up to {{ active_profile_limit }} active profiles. New profiles get a one-time {{ new_profile_fetch_days }}-day initial fetch window.</p>
         <label class="mt-4 block text-sm text-slate-300" for="linkedin_url">LinkedIn profile URL</label>
         <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100" id="linkedin_url" name="linkedin_url" placeholder="https://www.linkedin.com/in/example/" required type="url">
 
-        <label class="mt-4 block text-sm text-slate-300" for="full_name">Name</label>
+        <label class="mt-4 block text-sm text-slate-300" for="full_name">Display name</label>
         <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100" id="full_name" name="full_name" placeholder="Optional display name" type="text">
-
-        <label class="mt-4 block text-sm text-slate-300" for="company">Company / note</label>
-        <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100" id="company" name="company" placeholder="Optional context" type="text">
-
-        <label class="mt-4 block text-sm text-slate-300" for="tags">Tags</label>
-        <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100" id="tags" name="tags" placeholder="Optional comma-separated tags" type="text">
 
         <button class="mt-5 rounded-lg bg-sky-500 px-4 py-2 font-semibold text-slate-950 hover:bg-sky-400" type="submit">Add profile</button>
       </form>
@@ -146,27 +182,36 @@
       <div class="rounded-xl border border-slate-700 bg-slate-950/50 p-5">
         <h3 class="font-semibold text-slate-100">Active profile controls</h3>
         {% if active_profiles %}
-          <div class="mt-4 space-y-3">
+          <div class="mt-4 space-y-4">
             {% for profile in active_profiles %}
-              <div class="flex flex-col gap-3 rounded-lg border border-slate-800 bg-slate-900 p-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p class="text-sm font-medium text-slate-100">{{ profile.full_name or profile.linkedin_url }}</p>
-                  <p class="mt-1 break-all text-xs text-slate-500">{{ profile.linkedin_url }}</p>
-                </div>
-                <form method="post" action="/dashboard/profiles/{{ profile.id }}/archive" onsubmit="return confirm('Archive this profile? It will stop appearing in future fetches.');">
-                  <button class="rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/10" type="submit">Archive</button>
+              <div class="rounded-lg border border-slate-800 bg-slate-900 p-3">
+                <form class="space-y-3" method="post" action="/dashboard/profiles/{{ profile.id }}/edit">
+                  <div>
+                    <label class="block text-xs text-slate-400" for="profile_{{ profile.id }}_name">Display name</label>
+                    <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100" id="profile_{{ profile.id }}_name" name="full_name" value="{{ profile.full_name or '' }}" type="text">
+                  </div>
+                  <div>
+                    <label class="block text-xs text-slate-400" for="profile_{{ profile.id }}_url">LinkedIn URL</label>
+                    <input class="mt-1 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100" id="profile_{{ profile.id }}_url" name="linkedin_url" value="{{ profile.linkedin_url }}" required type="url">
+                  </div>
+                  <div class="flex flex-wrap gap-2">
+                    <button class="rounded-lg border border-sky-500/40 px-3 py-2 text-sm font-semibold text-sky-200 hover:bg-sky-500/10" type="submit">Save changes</button>
                 </form>
+                    <form method="post" action="/dashboard/profiles/{{ profile.id }}/pause" onsubmit="return confirm('Pause tracking for this profile? It will stop appearing in future fetches.');">
+                      <button class="rounded-lg border border-amber-500/40 px-3 py-2 text-sm font-semibold text-amber-200 hover:bg-amber-500/10" type="submit">Pause tracking</button>
+                    </form>
+                  </div>
               </div>
             {% endfor %}
           </div>
         {% else %}
-          <p class="mt-4 text-sm text-slate-400">No active profiles to archive.</p>
+          <p class="mt-4 text-sm text-slate-400">No active profiles to pause.</p>
         {% endif %}
       </div>
     </div>
 
     <div class="mt-6 rounded-xl border border-slate-700 bg-slate-950/50 p-5">
-      <h3 class="font-semibold text-slate-100">Archived profiles</h3>
+      <h3 class="font-semibold text-slate-100">Paused profiles</h3>
       {% if archived_profiles %}
         <div class="mt-4 space-y-3">
           {% for profile in archived_profiles %}
@@ -175,14 +220,19 @@
                 <p class="text-sm font-medium text-slate-100">{{ profile.full_name or profile.linkedin_url }}</p>
                 <p class="mt-1 break-all text-xs text-slate-500">{{ profile.linkedin_url }}</p>
               </div>
-              <form method="post" action="/dashboard/profiles/{{ profile.id }}/reactivate" onsubmit="return confirm('Reactivate this profile? It will be included in future fetches.');">
-                <button class="rounded-lg border border-emerald-500/40 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/10" type="submit">Reactivate</button>
-              </form>
+              <div class="flex flex-wrap gap-2">
+                <form method="post" action="/dashboard/profiles/{{ profile.id }}/reactivate" onsubmit="return confirm('Reactivate this profile? It will be included in future fetches.');">
+                  <button class="rounded-lg border border-emerald-500/40 px-3 py-2 text-sm font-semibold text-emerald-200 hover:bg-emerald-500/10" type="submit">Reactivate</button>
+                </form>
+                <form method="post" action="/dashboard/profiles/{{ profile.id }}/delete" onsubmit="return confirm('Delete this paused profile? Historical posts will be kept.');">
+                  <button class="rounded-lg border border-rose-500/40 px-3 py-2 text-sm font-semibold text-rose-200 hover:bg-rose-500/10" type="submit">Delete</button>
+                </form>
+              </div>
             </div>
           {% endfor %}
         </div>
       {% else %}
-        <p class="mt-4 text-sm text-slate-400">No archived profiles yet.</p>
+        <p class="mt-4 text-sm text-slate-400">No paused profiles yet.</p>
       {% endif %}
     </div>
   </section>

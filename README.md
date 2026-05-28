@@ -48,8 +48,10 @@ The prototype currently includes:
 - Seed script for the three starter profiles.
 - Real Apify fetch path validated.
 - Dashboard reorganized around the priority feed and tracked people.
-- Dashboard profile administration for adding, archiving, and reactivating tracked profiles.
-- Admin add/archive/reactivate actions now use encoded post/redirect/get confirmations, return to the administration section, and require browser confirmation for archive/reactivate.
+- Dashboard profile administration for adding, editing display names/URLs, pausing/reactivating, and deleting paused profiles.
+- Active profile safety limit of 10, with clear warnings when adding/reactivating would exceed the limit.
+- Admin add/edit/pause/reactivate/delete actions use encoded post/redirect/get confirmations, return to the administration section, and require browser confirmation for pause/reactivate/delete where appropriate.
+- Manual dashboard fetch now uses a confirmation step before execution, lists active profiles, explains normal 24-hour fetches, and gives newly added profiles a one-time 7-day initial lookback.
 - One-command daily cycle service and script for guarded fetch + mock report generation.
 - Commentary profile reader for `docs/profile/tony-commentary-style.md`.
 - Mock comment starter prompts on priority-feed cards, explicitly framed as thinking prompts rather than copy-paste comments.
@@ -69,9 +71,11 @@ The dashboard is organized as:
 
 3. **Profile administration**
    - Add a new tracked LinkedIn profile.
-   - Archive profiles you no longer want to monitor.
-   - Reactivate archived profiles later.
-   - Archived profiles stay in the local database but are excluded from fetches.
+   - Edit display names and LinkedIn URLs.
+   - Pause profiles you no longer want to monitor.
+   - Reactivate paused profiles later.
+   - Delete profiles only after they are paused.
+   - Paused profiles stay in the local database but are excluded from fetches.
 
 4. **Daily report**
    - Mock/no-op by default until a real AI provider is intentionally configured.
@@ -216,8 +220,8 @@ uv run ruff check .
 Latest known verification from this session:
 
 ```text
-.venv/bin/pytest -q  -> 53 passed
-.venv/bin/ruff check . -> All checks passed
+uv run pytest -q      -> 62 passed
+uv run ruff check .   -> All checks passed
 ```
 
 ## Development approach
@@ -263,16 +267,27 @@ Cmd + Shift + R
 
 Review:
 
-1. Refresh the dashboard and inspect priority-feed cards. Confirm the comment starter area feels like useful thinking prompts, not copy-paste comments.
-2. Run `uv run python scripts/daily_cycle.py` and inspect the recap before scheduling anything.
-3. Confirm the recap makes the future notification behavior obvious: notify only when new posts were saved; otherwise stay quiet.
+1. Add or edit a profile and confirm the interface clearly shows that it will be included in the next fetch.
+2. Use **Review fetch details** and confirm the fetch confirmation explains active profiles, 24-hour normal lookback, 7-day initial lookback for new profiles, limits, and skip behavior.
+3. Execute the fetch and confirm the recap makes saved/skipped/no-new-post outcomes understandable.
+4. Pause a test profile and confirm delete is available only after it is paused.
 
 Recommended next development focus:
 
-- Add local scheduling docs after Tony reviews the daily-cycle recap and confirms the cost/notification behavior feels safe.
-- Start replacing mock comment starters with more personalized guidance as Tony fills in `docs/profile/tony-commentary-style.md`.
+- Have Tony test whether the new fetch confirmation/result recap removes the “nothing happened” feeling after adding a new profile.
+- Consider simple event/live-presentation detection callouts before adding email or calendar automation.
+- Start replacing mock comment starters with more personalized guidance as Tony provides fuller Markdown profile/voice files.
 
 ## Progress log
+
+### 2026-05-27 — Profile management and fetch confirmation UX
+
+- Added a two-step dashboard fetch flow: **Review fetch details** then **Execute fetch**.
+- Fetch confirmation now lists active profiles, explains the normal 24-hour lookback, gives newly added profiles a one-time 7-day lookback, and states Apify/active-profile guardrails.
+- Raised the active-profile safety limit to 10 and added clear handling when adding/reactivating would exceed the limit.
+- Simplified profile UI by hiding company/tags, adding edit display-name/URL controls, renaming archive to pause tracking, and allowing delete only after pause while keeping historical posts.
+- Added `docs/plans/2026-05-27-profile-fetch-ux.md`.
+- Verified with `uv run pytest -q` (62 passed) and `uv run ruff check .`.
 
 ### 2026-05-24 — Comment starters and reviewable daily cycle recap
 

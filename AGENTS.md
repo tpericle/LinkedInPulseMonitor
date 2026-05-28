@@ -156,7 +156,7 @@ pytest -q
 ruff check .
 ```
 
-## Current known state as of 2026-05-24
+## Current known state as of 2026-05-27
 
 The project has moved beyond the initial foundation. The dashboard and Apify flow have working pieces.
 
@@ -178,14 +178,16 @@ Implemented so far:
 - Seed script for the three starter profiles.
 - Real 72-hour Apify fetch was run once to populate data for review.
 - Dashboard was reorganized around:
-  1. Priority feed.
-  2. People we follow.
+  1. Activity from the last 7 days.
+  2. People we follow / active profiles.
   3. Profile administration.
   4. Daily report.
 - Priority-feed post cards now show lightweight review/age badges, such as `Review today`, `Review window`, and relative age labels like `~3h ago`.
 - Priority-feed post cards now show mock comment starter ideas from `docs/profile/tony-commentary-style.md`, explicitly framed as thinking prompts rather than copy-paste comments.
-- Profile administration now supports add, archive, and reactivate flows. Archived profiles remain stored but are excluded from active-profile fetches.
-- Admin add/archive/reactivate actions now use encoded post/redirect/get confirmations, redirect back to `#profile-administration`, and require browser confirmation before archive/reactivate.
+- Profile administration supports add, edit display name/URL, pause tracking, reactivate, and delete paused profile flows.
+- Active profile fetch safety limit is 10. Adding or reactivating an 11th active profile should warn/refuse until another profile is paused.
+- Admin add/edit/pause/reactivate/delete actions use encoded post/redirect/get confirmations, redirect back to `#profile-administration`, and require browser confirmation for pause/reactivate/delete where appropriate.
+- Dashboard fetch uses a two-step flow: review fetch details, then execute. The confirmation page lists active profiles, explains normal 24-hour lookback, gives newly added profiles a one-time 7-day lookback, and states Apify/profile guardrails.
 - `scripts/daily_cycle.py` and `app/daily_cycle.py` provide a one-command guarded fetch + mock report cycle with a reviewable recap: profiles checked, items returned, parsed/inserted/skipped counts, provider status, estimated Apify cost, report id, and notify-or-stay-quiet recommendation.
 - `docs/profile/tony-commentary-style.md` is the editable markdown starting point for Tony's future comment guidance.
 - `app/commentary_profile.py` reads and sectionizes the commentary markdown for future mock comment starter prompts.
@@ -200,8 +202,8 @@ d9edb02 Reorganize dashboard around recent posts
 Latest known verification from this session:
 
 ```text
-.venv/bin/pytest -q     # 53 passed
-.venv/bin/ruff check .  # All checks passed
+uv run pytest -q      # 62 passed
+uv run ruff check .   # All checks passed
 ```
 
 The local database after the real 72-hour fetch had:
@@ -216,14 +218,16 @@ scrape_runs: 1
 
 Tony should review:
 
-- Refresh the dashboard and inspect priority-feed cards. Confirm the comment starter ideas feel like useful thinking prompts, not copy-paste comments.
-- Run `uv run python scripts/daily_cycle.py` and inspect the recap before scheduling anything.
-- Confirm the recap makes future notification behavior obvious: notify only when new posts were saved; otherwise stay quiet.
+- Add or edit a profile and confirm the success message makes it obvious the profile will be included in the next fetch.
+- Use **Review fetch details** and confirm the confirmation page lists active profiles and clearly explains the 24-hour normal lookback plus 7-day initial lookback for newly added profiles.
+- Execute a fetch and confirm the recap makes saved/skipped/no-new-post outcomes understandable.
+- Pause a test profile and confirm delete is available only after pause, while historical posts remain.
 
 Recommended next development focus:
 
-1. Add local scheduling docs after Tony reviews the daily-cycle recap and confirms the cost/notification behavior feels safe.
-2. Start replacing mock comment starters with more personalized guidance as Tony fills in `docs/profile/tony-commentary-style.md`.
+1. Have Tony test whether the new fetch confirmation/result recap removes the “nothing happened” feeling after adding a new profile.
+2. Consider simple event/live-presentation detection callouts before adding email or calendar automation.
+3. Start replacing mock comment starters with more personalized guidance as Tony provides fuller Markdown profile/voice files.
 
 ## Documentation maintenance rule
 
@@ -236,6 +240,15 @@ As the project evolves, append updates rather than relying only on chat history.
   - `README.md` is the human-facing setup and usage file.
 
 ## Progress log
+
+### 2026-05-27 — Profile management and fetch confirmation UX
+
+- Added a two-step dashboard fetch flow: **Review fetch details** then **Execute fetch**.
+- Fetch confirmation lists active profiles, explains the normal 24-hour lookback, gives newly added profiles a one-time 7-day lookback, and states Apify/active-profile guardrails.
+- Raised the active-profile safety limit to 10 and added clear handling when adding/reactivating would exceed the limit.
+- Simplified profile UI by hiding company/tags, adding edit display-name/URL controls, renaming archive to pause tracking, and allowing delete only after pause while keeping historical posts.
+- Added `docs/plans/2026-05-27-profile-fetch-ux.md`.
+- Verified with `uv run pytest -q` (62 passed) and `uv run ruff check .`.
 
 ### 2026-05-24 — Comment starters and reviewable daily cycle recap
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from typing import Any, Protocol
@@ -12,7 +13,7 @@ from app.models import Person, ScrapeRun
 from app.pipeline import ingest_apify_items
 
 DEFAULT_LIMIT_PER_SOURCE = 3
-DEFAULT_MAX_PROFILES = 3
+DEFAULT_MAX_PROFILES = 10
 DEFAULT_MAX_TOTAL_CHARGE_USD = 1.0
 
 
@@ -57,8 +58,9 @@ def run_manual_apify_fetch(
     limit_per_source: int = DEFAULT_LIMIT_PER_SOURCE,
     max_total_charge_usd: float = DEFAULT_MAX_TOTAL_CHARGE_USD,
     lookback: timedelta | None = None,
+    profiles: Sequence[Person] | None = None,
 ) -> ManualFetchResult:
-    active_profiles = db.scalars(
+    active_profiles = list(profiles) if profiles is not None else db.scalars(
         select(Person).where(Person.is_active.is_(True)).order_by(Person.added_at.asc())
     ).all()
     if len(active_profiles) > max_profiles:

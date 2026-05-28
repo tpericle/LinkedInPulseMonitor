@@ -69,7 +69,8 @@ def test_dashboard_renders_profile_administration_form():
     assert 'action="/dashboard/profiles"' in response.text
     assert 'name="linkedin_url"' in response.text
     assert 'name="full_name"' in response.text
-    assert 'name="company"' in response.text
+    assert 'name="company"' not in response.text
+    assert 'name="tags"' not in response.text
 
 
 def test_seed_sample_profiles_creates_three_active_starter_profiles(db_session: Session):
@@ -149,12 +150,12 @@ def test_dashboard_renders_active_profiles_and_hides_inactive_profiles(
 
     assert response.status_code == 200
     assert "People we follow" in response.text
-    assert "These are the people that we’re following" in response.text
-    assert "1 active profile configured" in response.text
+    assert "Active profiles" in response.text
+    assert "1 of 10 active profile" in response.text
     assert "Dr. Arthur Brooks" in response.text
-    assert "Harvard" in response.text
+    assert "Harvard" not in response.text
     assert "https://www.linkedin.com/in/arthur-c-brooks/" in response.text
-    assert "Archived profiles" in response.text
+    assert "Paused profiles" in response.text
     assert "Archived Person" in response.text
     assert "Reactivate" in response.text
 
@@ -186,8 +187,6 @@ def test_dashboard_profile_form_creates_profile_redirects_to_admin_and_confirms(
         data={
             "linkedin_url": "https://www.linkedin.com/in/dharmesh",
             "full_name": "Dharmesh Shah",
-            "company": "HubSpot",
-            "tags": "startup, marketing",
         },
         follow_redirects=False,
     )
@@ -195,21 +194,24 @@ def test_dashboard_profile_form_creates_profile_redirects_to_admin_and_confirms(
     stored_person = db_session.scalars(select(Person)).one()
     assert response.status_code == 303
     assert response.headers["location"] == (
-        "/dashboard?success=Added+Dharmesh+Shah+to+active+profiles"
+        "/dashboard?success=Added+Dharmesh+Shah+to+active+profiles.+This+profile+will+be+included+in+your+next+fetch."
         "#profile-administration"
     )
     assert stored_person.linkedin_url == "https://www.linkedin.com/in/dharmesh/"
     assert stored_person.full_name == "Dharmesh Shah"
-    assert stored_person.company == "HubSpot"
-    assert stored_person.tags_json == '["startup", "marketing"]'
+    assert stored_person.company is None
+    assert stored_person.tags_json is None
 
     refreshed = client_with_db.get(response.headers["location"])
     assert refreshed.status_code == 200
-    assert "Added Dharmesh Shah to active profiles" in refreshed.text
+    assert (
+        "Added Dharmesh Shah to active profiles. "
+        "This profile will be included in your next fetch."
+        in refreshed.text
+    )
     assert "Profile administration" in refreshed.text
     assert "Dharmesh Shah" in refreshed.text
-    assert "HubSpot" in refreshed.text
-    assert "1 active profile configured" in refreshed.text
+    assert "1 of 10 active profile" in refreshed.text
 
 
 def test_dashboard_profiles_get_redirects_to_administration(client_with_db: TestClient):
@@ -233,7 +235,7 @@ def test_dashboard_profile_form_guides_invalid_linkedin_url(
     assert "https://www.linkedin.com/in/" in response.text
 
 
-def test_dashboard_archive_profile_deactivates_profile_and_confirms(
+def test_dashboard_pause_profile_deactivates_profile_and_confirms(
     db_session: Session, client_with_db: TestClient
 ):
     person = Person(
@@ -245,21 +247,24 @@ def test_dashboard_archive_profile_deactivates_profile_and_confirms(
     db_session.commit()
 
     response = client_with_db.post(
-        f"/dashboard/profiles/{person.id}/archive", follow_redirects=False
+        f"/dashboard/profiles/{person.id}/pause", follow_redirects=False
     )
 
     db_session.refresh(person)
     assert response.status_code == 303
     assert response.headers["location"] == (
-        "/dashboard?success=Archived+Archive+Me.+They+will+not+be+included+in+future+fetches."
+        "/dashboard?success=Paused+tracking+for+Archive+Me.+They+will+not+be+included+in+future+fetches."
         "#profile-administration"
     )
     assert person.is_active is False
 
     refreshed = client_with_db.get(response.headers["location"])
     assert refreshed.status_code == 200
-    assert "Archived Archive Me. They will not be included in future fetches." in refreshed.text
-    assert "Archived profiles" in refreshed.text
+    assert (
+        "Paused tracking for Archive Me. They will not be included in future fetches."
+        in refreshed.text
+    )
+    assert "Paused profiles" in refreshed.text
     assert "Archive Me" in refreshed.text
     assert "Reactivate" in refreshed.text
 
@@ -291,7 +296,7 @@ def test_dashboard_reactivate_profile_activates_profile_and_confirms(
     assert refreshed.status_code == 200
     assert "Reactivated Reactivate Me. They will be included in future fetches." in refreshed.text
     assert "Reactivate Me" in refreshed.text
-    assert "Archive" in refreshed.text
+    assert "Pause tracking" in refreshed.text
 
 
 def test_dashboard_admin_actions_use_confirmation_prompts(
@@ -318,7 +323,7 @@ def test_dashboard_admin_actions_use_confirmation_prompts(
     assert response.status_code == 200
     assert 'id="profile-administration"' in response.text
     archive_confirm = (
-        "return confirm('Archive this profile? "
+        "return confirm('Pause tracking for this profile? "
         "It will stop appearing in future fetches.');"
     )
     reactivate_confirm = (
@@ -334,8 +339,8 @@ def test_dashboard_manual_fetch_button_renders_guarded_fetch_button():
     response = client.get("/dashboard")
 
     assert response.status_code == 200
-    assert "Fetch latest posts now" in response.text
-    assert "action=\"/dashboard/fetch/apify\"" in response.text
+    assert "Review fetch details" in response.text
+    assert "href=\"/dashboard/fetch/apify\"" in response.text
 
 
 def test_dashboard_orders_recent_posts_then_followed_people_then_administration():
@@ -344,7 +349,7 @@ def test_dashboard_orders_recent_posts_then_followed_people_then_administration(
     response = client.get("/dashboard")
 
     assert response.status_code == 200
-    recent_index = response.text.index("Priority feed")
+    recent_index = response.text.index("Activity from the last 7 days")
     people_index = response.text.index("People we follow")
     admin_index = response.text.index("Profile administration")
     assert recent_index < people_index < admin_index
@@ -382,7 +387,7 @@ def test_dashboard_recent_posts_focuses_on_last_seven_days(
     response = client_with_db.get("/dashboard")
 
     assert response.status_code == 200
-    assert "Recent posts from the last 7 days" in response.text
+    assert "Activity from the last 7 days" in response.text
     assert "Seven Day Author" in response.text
     assert "Review window" in response.text
     assert "~6d ago" in response.text
@@ -416,7 +421,7 @@ def test_dashboard_empty_recent_posts_names_seven_day_window_and_last_fetch(
     assert "Last fetch: 2026-05-21 15:30" in response.text
 
 
-def test_dashboard_manual_fetch_button_runs_guarded_fetch_and_shows_step_log(
+def test_dashboard_execute_fetch_runs_guarded_fetch_and_shows_step_log(
     monkeypatch: pytest.MonkeyPatch,
     db_session: Session,
     client_with_db: TestClient,
@@ -451,16 +456,20 @@ def test_dashboard_manual_fetch_button_runs_guarded_fetch_and_shows_step_log(
         fake_run_dashboard_manual_fetch,
     )
 
-    response = client_with_db.post("/dashboard/fetch/apify", follow_redirects=True)
+    response = client_with_db.post("/dashboard/fetch/apify/execute", follow_redirects=True)
 
     assert response.status_code == 200
     assert calls == [db_session]
-    assert "Fetch recap" in response.text
-    assert "Found 1 active profile." in response.text
+    assert "Fetch complete" in response.text
+    assert "Checked 1 active profile." in response.text
     assert "Asked Apify for up to 3 latest posts per profile." in response.text
+    assert (
+        "Skipped posts may be duplicates, outside the lookback window, or unparseable."
+        in response.text
+    )
     assert "Apify returned 3 items." in response.text
     assert "Parsed 2 posts from those items." in response.text
-    assert "Saved 1 new post and skipped 2 existing or out-of-window posts." in response.text
+    assert "Saved 1 new post and skipped 2 items." in response.text
     assert "Provider status: SUCCEEDED." in response.text
     assert "Estimated Apify cost: $0.011." in response.text
 
@@ -525,3 +534,155 @@ def test_dashboard_recent_post_cards_show_non_copy_paste_comment_starters(
         "in public with agent-assisted product building."
         in response.text
     )
+
+
+
+def test_dashboard_refuses_eleventh_active_profile(
+    db_session: Session, client_with_db: TestClient
+):
+    for index in range(10):
+        db_session.add(
+            Person(
+                full_name=f"Active {index}",
+                linkedin_url=f"https://www.linkedin.com/in/active-{index}/",
+                is_active=True,
+            )
+        )
+    db_session.commit()
+
+    response = client_with_db.post(
+        "/dashboard/profiles",
+        data={
+            "linkedin_url": "https://www.linkedin.com/in/eleventh/",
+            "full_name": "Eleventh Person",
+        },
+    )
+
+    active_count = len(db_session.scalars(select(Person).where(Person.is_active.is_(True))).all())
+    assert response.status_code == 400
+    assert active_count == 10
+    assert "You can have no more than 10 active profiles" in response.text
+
+
+def test_dashboard_edit_profile_updates_name_and_url(
+    db_session: Session, client_with_db: TestClient
+):
+    person = Person(
+        full_name="Old Name",
+        linkedin_url="https://www.linkedin.com/in/old-name/",
+        is_active=True,
+    )
+    db_session.add(person)
+    db_session.commit()
+
+    response = client_with_db.post(
+        f"/dashboard/profiles/{person.id}/edit",
+        data={
+            "full_name": "New Name",
+            "linkedin_url": "https://www.linkedin.com/in/new-name",
+        },
+        follow_redirects=True,
+    )
+
+    db_session.refresh(person)
+    assert response.status_code == 200
+    assert person.full_name == "New Name"
+    assert person.linkedin_url == "https://www.linkedin.com/in/new-name/"
+    assert "Updated New Name." in response.text
+    assert "New Name" in response.text
+
+
+def test_dashboard_delete_requires_paused_profile(
+    db_session: Session, client_with_db: TestClient
+):
+    person = Person(
+        full_name="Active Delete Attempt",
+        linkedin_url="https://www.linkedin.com/in/active-delete-attempt/",
+        is_active=True,
+    )
+    db_session.add(person)
+    db_session.commit()
+
+    response = client_with_db.post(
+        f"/dashboard/profiles/{person.id}/delete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert db_session.get(Person, person.id) is not None
+    assert "Pause tracking before deleting a profile." in response.text
+
+
+def test_dashboard_delete_paused_profile_keeps_historical_posts(
+    db_session: Session, client_with_db: TestClient
+):
+    person = Person(
+        full_name="Paused Delete",
+        linkedin_url="https://www.linkedin.com/in/paused-delete/",
+        is_active=False,
+    )
+    db_session.add(person)
+    db_session.commit()
+    post = Post(
+        person_id=person.id,
+        source="apify",
+        source_post_id="historical-post",
+        author_name="Paused Delete",
+        content="Historical post should remain.",
+        post_type="post",
+        raw_json="{}",
+    )
+    db_session.add(post)
+    db_session.commit()
+
+    response = client_with_db.post(
+        f"/dashboard/profiles/{person.id}/delete",
+        follow_redirects=True,
+    )
+
+    stored_post = db_session.scalars(select(Post)).one()
+    assert response.status_code == 200
+    assert db_session.get(Person, person.id) is None
+    assert stored_post.person_id is None
+    assert stored_post.content == "Historical post should remain."
+    assert "Deleted Paused Delete. Historical posts were kept." in response.text
+
+
+def test_dashboard_fetch_confirmation_explains_profiles_and_lookbacks(
+    db_session: Session, client_with_db: TestClient
+):
+    db_session.add_all(
+        [
+            Person(
+                full_name="Existing Profile",
+                linkedin_url="https://www.linkedin.com/in/existing-profile/",
+                is_active=True,
+                added_at=datetime(2026, 5, 20, 8, 0),
+            ),
+            Person(
+                full_name="New Profile",
+                linkedin_url="https://www.linkedin.com/in/new-profile/",
+                is_active=True,
+                added_at=datetime(2026, 5, 22, 8, 0),
+            ),
+            ScrapeRun(
+                provider="apify",
+                status="SUCCEEDED",
+                started_at=datetime(2026, 5, 21, 8, 0),
+                finished_at=datetime(2026, 5, 21, 8, 0),
+                item_count=0,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard/fetch/apify")
+
+    assert response.status_code == 200
+    assert "Confirm fetch latest posts" in response.text
+    assert "Existing Profile" in response.text
+    assert "New Profile" in response.text
+    assert "Existing profiles: last 24 hours" in response.text
+    assert "New profiles: initial 7-day lookback" in response.text
+    assert "Execute fetch" in response.text
+    assert 'action="/dashboard/fetch/apify/execute"' in response.text

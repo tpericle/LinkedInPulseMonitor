@@ -373,7 +373,7 @@ def _dashboard_context(
         select(Post)
         .where(Post.authored_at.is_not(None), Post.authored_at >= recent_cutoff)
         .order_by(Post.authored_at.desc())
-        .limit(10)
+        .limit(25)
     ).all()
     latest_report = db.scalar(select(DailyReport).order_by(DailyReport.report_date.desc()).limit(1))
     latest_fetch = db.scalar(
@@ -391,6 +391,9 @@ def _dashboard_context(
         list(active_profiles), latest_success
     )
     commentary_profile = load_commentary_profile()
+    recent_post_cards = [_post_card(post, commentary_profile) for post in recent_posts]
+    visible_recent_post_cards = recent_post_cards[:5]
+    extra_recent_post_cards = recent_post_cards[5:]
 
     return {
         "app_name": settings.app_name,
@@ -400,7 +403,10 @@ def _dashboard_context(
         "archived_profiles": archived_profiles,
         "archived_profile_count": len(archived_profiles),
         "recent_posts": recent_posts,
-        "recent_post_cards": [_post_card(post, commentary_profile) for post in recent_posts],
+        "recent_post_cards": recent_post_cards,
+        "visible_recent_post_cards": visible_recent_post_cards,
+        "extra_recent_post_cards": extra_recent_post_cards,
+        "extra_recent_post_count": len(extra_recent_post_cards),
         "recent_post_days": 7,
         "normal_fetch_hours": 24,
         "new_profile_fetch_days": 7,

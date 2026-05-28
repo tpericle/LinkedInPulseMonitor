@@ -339,7 +339,8 @@ def test_dashboard_manual_fetch_button_renders_guarded_fetch_button():
     response = client.get("/dashboard")
 
     assert response.status_code == 200
-    assert "Review fetch details" in response.text
+    assert "Fetch Details" in response.text
+    assert "Review fetch details" not in response.text
     assert "href=\"/dashboard/fetch/apify\"" in response.text
 
 
@@ -397,6 +398,35 @@ def test_dashboard_recent_posts_focuses_on_last_seven_days(
     assert "Open post →" in response.text
     assert "Old Author" not in response.text
     assert "This post should not be shown on the dashboard." not in response.text
+
+
+def test_dashboard_groups_extra_recent_posts_behind_expand_control(
+    db_session: Session, client_with_db: TestClient
+):
+    now = datetime.now(UTC).replace(tzinfo=None)
+    for index in range(12):
+        db_session.add(
+            Post(
+                source="apify",
+                source_post_id=f"expandable-post-{index}",
+                author_name=f"Author {index}",
+                content=f"Expandable post content {index}",
+                post_type="post",
+                authored_at=now - timedelta(hours=index),
+                raw_json="{}",
+            )
+        )
+    db_session.commit()
+
+    response = client_with_db.get("/dashboard")
+
+    assert response.status_code == 200
+    assert "Author 0" in response.text
+    assert "Author 4" in response.text
+    assert "Show 7 more posts" in response.text
+    assert "Author 5" in response.text
+    assert "Author 11" in response.text
+    assert "More activity from the last 7 days" in response.text
 
 
 def test_dashboard_empty_recent_posts_names_seven_day_window_and_last_fetch(
@@ -685,4 +715,7 @@ def test_dashboard_fetch_confirmation_explains_profiles_and_lookbacks(
     assert "Existing profiles: last 24 hours" in response.text
     assert "New profiles: initial 7-day lookback" in response.text
     assert "Execute fetch" in response.text
+    assert "Processing fetch" in response.text
+    assert "Fetching posts now" in response.text
+    assert "We're checking LinkedIn activity for your active profiles now." in response.text
     assert 'action="/dashboard/fetch/apify/execute"' in response.text

@@ -220,7 +220,7 @@ uv run ruff check .
 Latest known verification from this session:
 
 ```text
-uv run pytest -q      -> 62 passed
+uv run pytest -q      -> 63 passed
 uv run ruff check .   -> All checks passed
 ```
 
@@ -268,7 +268,7 @@ Cmd + Shift + R
 Review:
 
 1. Add or edit a profile and confirm the interface clearly shows that it will be included in the next fetch.
-2. Use **Review fetch details** and confirm the fetch confirmation explains active profiles, 24-hour normal lookback, 7-day initial lookback for new profiles, limits, and skip behavior.
+2. Use **Fetch Details** and confirm the fetch confirmation explains active profiles, 24-hour normal lookback, 7-day initial lookback for new profiles, limits, and skip behavior.
 3. Execute the fetch and confirm the recap makes saved/skipped/no-new-post outcomes understandable.
 4. Pause a test profile and confirm delete is available only after it is paused.
 
@@ -282,12 +282,15 @@ Recommended next development focus:
 
 ### 2026-05-27 — Profile management and fetch confirmation UX
 
-- Added a two-step dashboard fetch flow: **Review fetch details** then **Execute fetch**.
+- Added a two-step dashboard fetch flow: **Fetch Details** then **Execute fetch**.
+- Renamed the dashboard fetch button to Tony's preferred **Fetch Details** label.
+- Added an on-submit processing state so Execute fetch visibly changes to processing and shows a status message while the request runs.
 - Fetch confirmation now lists active profiles, explains the normal 24-hour lookback, gives newly added profiles a one-time 7-day lookback, and states Apify/active-profile guardrails.
+- The activity feed now shows the first 5 posts by default and lets Tony expand to see additional posts from the last 7 days.
 - Raised the active-profile safety limit to 10 and added clear handling when adding/reactivating would exceed the limit.
 - Simplified profile UI by hiding company/tags, adding edit display-name/URL controls, renaming archive to pause tracking, and allowing delete only after pause while keeping historical posts.
 - Added `docs/plans/2026-05-27-profile-fetch-ux.md`.
-- Verified with `uv run pytest -q` (62 passed) and `uv run ruff check .`.
+- Verified with `uv run pytest -q` (63 passed) and `uv run ruff check .`.
 
 ### 2026-05-24 — Comment starters and reviewable daily cycle recap
 
